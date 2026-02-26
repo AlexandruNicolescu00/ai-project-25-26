@@ -30,3 +30,4 @@ Gemfile.lock
 */*.blg
 */*.fdb_latexmk
 */*.gz
+*/%OUTDIR%
