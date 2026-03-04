@@ -83,7 +83,17 @@ La nostra soluzione si articola nei seguenti punti:
     \item \textbf{Sfide Computazionali:} Le principali difficoltà affrontate sono state la gestione della \textbf{Context Window}
           limitata (tipica dei modelli Encoder-Only), che ha imposto vincoli severi sulle strategie di Few-Shot Learning, e la sfida di
           massimizzare le performance di generalizzazione nonostante il \textbf{basso numero di parametri} dei modelli ``base'' e
-          ``distilled'' selezionati, richiedendo un'ottimizzazione fine degli iperparametri.
+          ``distilled'' selezionati, richiedendo un'ottimizzazione fine degli iperparametri. Un'ulteriore sfida è rappresentata dallo
+          \textbf{sbilanciamento delle classi} nel dataset: come evidenziato in Figura \ref{fig:class_distribution}, le classi
+          \textit{Joy} e \textit{Sadness} dominano il training set (rispettivamente $\sim$5300 e $\sim$4700 campioni), mentre
+          \textit{Surprise} conta appena $\sim$600 esempi, rendendo più difficile la generalizzazione sulle emozioni minoritarie.
+
+          \begin{figure}[H]
+              \centering
+              \includegraphics[width=0.75\textwidth]{img/class_distribution.png}
+              \caption{Distribuzione delle classi nel Training Set: evidente sbilanciamento tra \textit{Joy}/\textit{Sadness} e \textit{Surprise}.}
+              \label{fig:class_distribution}
+          \end{figure}
 \end{itemize}
 
 \paragraph{Task Distribution:}
@@ -137,8 +147,6 @@ Le prestazioni sono state valutate utilizzando un set di metriche standard per l
     \item \textbf{Accuracy:} Rappresenta la frazione di predizioni corrette rispetto al totale dei campioni. Sebbene sia la metrica più intuitiva per una valutazione globale, in questo progetto viene utilizzata solo come riferimento di base, poiché può risultare ingannevole in presenza di dataset sbilanciati (un modello che predice sempre la classe maggioritaria avrebbe comunque un'accuratezza elevata).
 
     \item \textbf{Macro F1-Score:} È la media armonica tra \textit{Precision} e \textit{Recall}, calcolata indipendentemente per ogni classe e poi mediata (senza pesare per la numerosità delle istanze). Questa è la metrica \textbf{critica} per il nostro task a causa del forte sbilanciamento del dataset (le classi \textit{Joy} e \textit{Sadness} sono molto più frequenti di \textit{Surprise} e \textit{Love}). L'uso del \textit{Macro-average} penalizza i modelli che ignorano le classi minoritarie, garantendo che ogni emozione abbia lo stesso peso nella valutazione finale.
-
-    \item \textbf{Confusion Matrix:} È una tabella che visualizza il confronto tra le etichette reali (righe) e quelle predette dal modello (colonne). Viene utilizzata per l'\textbf{analisi qualitativa} degli errori, permettendo di diagnosticare non solo \textit{quanto} il modello sbaglia, ma \textit{dove} sbaglia (ad esempio, rivelando se l'emozione \textit{Love} viene sistematicamente confusa con \textit{Joy} a causa della sovrapposizione semantica).
 \end{itemize}
 \section{Experimental Results}
 
@@ -159,17 +167,18 @@ Per garantire la riproducibilità degli esperimenti, il progetto è stato svilup
 \end{itemize}
 
 \subsubsection{Results}
-La configurazione migliore identificata (\textbf{LoRA Optimized}) ha ottenuto i seguenti risultati sul Validation Set (Best Epoch):
+La configurazione migliore identificata (\textbf{Full Fine Tuning}) ha ottenuto i seguenti risultati sul Test Set:
 \begin{itemize}
-    \item \textbf{Accuracy:} 94.20\%
-    \item \textbf{Macro F1-Score:} 91.69\%
-    \item \textbf{Training Time:} $\sim$15 minuti (10 epoche).
+    \item \textbf{Accuracy:} 93.40\%
+    \item \textbf{Macro F1-Score:} 89.90\%
+    \item \textbf{Training Time:} $\sim$31 minuti (10 epoche).
 \end{itemize}
 
-Questa configurazione utilizzava un Rango $r=8$, un Learning Rate di $2e^{-4}$ con \textit{Cosine Scheduler}, e applicava LoRA
-a \textbf{tutti i layer lineari} del trasformatore (\texttt{query}, \texttt{key}, \texttt{value}, \texttt{dense}), non solo a
-quelli di attenzione.
+Questa configurazione utilizzava un Learning Rate di $3e^{-5}$ e un Batch Size di 8, con tutti i parametri del modello
+aggiornati durante il training (\textit{full fine tuning}) senza alcun freezing dei layer.
 
+\textbf{Nota:} LoRA ha ottenuto risultati comparabili con Accuracy 93.20\% e Macro F1-Score 89.10\%, rappresentando
+un'alternativa efficiente in termini di parametri addestrabili a fronte di prestazioni molto simili.
 \subsubsection{Ablation Study: Analysis of Configurations}
 Lo studio di ablation è stato condotto in tre fasi distinte per isolare l'impatto dei singoli iperparametri e delle limitazioni architetturali.
 
@@ -178,19 +187,18 @@ Abbiamo valutato l'efficacia dell'aggiunta di esempi ($k$-shot) nel prompt. I ri
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|c|l|}
+    \begin{tabular}{|c|c|c|c|l|}
         \hline
-        \textbf{Shots ($k$)} & \textbf{Accuracy} & \textbf{Truncated} & \textbf{Note}                                         \\
+        \textbf{Shots ($k$)} & \textbf{Accuracy} & \textbf{F1-Score} & \textbf{Truncated} & \textbf{Note}                       \\
         \hline
-        0                    & \textbf{49.30\%}  & 0                  & Baseline Zero-Shot (Migliore).                        \\
-        1                    & 46.87\%           & 0                  & Nessun miglioramento significativo.                   \\
-        3                    & 48.40\%           & 0                  & Inizio saturazione contesto.                          \\
-        5                    & 48.88\%           & 25                 & \textbf{Degrado tecnico}: 25 esempi su 2000 troncati. \\
+        0                    & \textbf{49.30\%}  & 24.63\%           & 0                  & Baseline Zero-Shot (Migliore).      \\
+        1                    & 46.87\%           & 22.28\%           & 0                  & Peggioramento                       \\
+        3                    & 48.40\%           & 24.59\%           & 0                  & Nessun miglioramento significativo. \\
+        5                    & 48.88\%           & 25.77\%           & 25                 & 25 esempi su 2000 troncati.         \\
         \hline
     \end{tabular}
     \caption{Ablation su In-Context Learning}
 \end{table}
-
 \subsubsection{2. Tuning del Transfer Learning (Frozen)}
 Mantenendo il corpo del modello congelato, abbiamo condotto una \textit{Grid Search} completa combinando tre valori di Learning Rate ($LR \in \{1e^{-3}, 1e^{-4}, 1e^{-5}\}$) con due dimensioni di Batch Size ($BS \in \{8, 16\}$), per un totale di 6 configurazioni sperimentali.
 I risultati indicano che un LR più aggressivo ($1e^{-3}$) è strettamente necessario per addestrare efficacemente la testa di classificazione da zero; tuttavia, l'accuracy massima rimane bloccata attorno al 54\%, confermando l'insufficienza del metodo \textit{Frozen} per questo task.
@@ -201,32 +209,63 @@ I risultati indicano che un LR più aggressivo ($1e^{-3}$) è strettamente neces
         \hline
         \textbf{Learning Rate} & \textbf{Batch Size} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        $1e^{-3}$              & 16                  & \textbf{54.45\%}  & 29.9\%            \\
-        $1e^{-4}$              & 16                  & 50.25\%           & 20.8\%            \\
-        $1e^{-5}$              & 16                  & 40.85\%           & 14.9\%            \\
+        $1e^{-3}$              & 16                  & \textbf{54.15\%}  & 29.62\%           \\
+        $1e^{-3}$              & 8                   & 53.60\%           & 29.33\%           \\
+        $1e^{-4}$              & 8                   & 50.70\%           & 21.86\%           \\
+        $1e^{-4}$              & 16                  & 50.40\%           & 21.07\%           \\
+        $1e^{-5}$              & 8                   & 44.55\%           & 17.36\%           \\
+        $1e^{-5}$              & 16                  & 41.10\%           & 15.10\%           \\
         \hline
     \end{tabular}
-    \caption{Sensibilità al Learning Rate nel Transfer Learning (Batch Size fissato a 16)}
+    \caption{Grid Search completa sul Transfer Learning (Frozen): tutte le 6 configurazioni ordinate per Accuracy decrescente.}
 \end{table}
 
-\subsubsection{3. Configurazione Ottimale di LoRA}
-Per individuare l'architettura PEFT ideale, abbiamo eseguito una \textit{Grid Search} estensiva testando 36 combinazioni diverse di iperparametri: Rango ($r \in \{8, 16, 32\}$), Moduli Target (solo attenzione vs tutti i layer lineari), Learning Rate ($1e^{-3}, 1e^{-4}, 1e^{-5}$) e Batch Size ($8, 16$).
-I dati dimostrano che targettare \textbf{tutti i moduli lineari} (\texttt{all-linear}) con un rango contenuto ($r=8$) è nettamente più efficace che aumentare il rango su pochi moduli. È emerso inoltre un trade-off critico sulla stabilità: LR elevati ($1e^{-3}$), pur funzionando su configurazioni semplici, causano \textit{Training Collapse} quando applicati a modelli più complessi ($r \ge 16$ su tutti i layer).
+\subsubsection{3. Tuning del Full Fine Tuning}
+Per il Full Fine Tuning, abbiamo condotto una \textit{Grid Search} su tre valori di Learning Rate tipici per questo approccio
+($LR \in \{2e^{-5}, 3e^{-5}, 5e^{-5}\}$) con due dimensioni di Batch Size ($BS \in \{8, 16\}$), per un totale di 6 configurazioni sperimentali.
+I risultati mostrano che il modello è molto sensibile al Learning Rate: $LR = 5e^{-5}$ con Batch Size 16 causa un collasso del training
+(Accuracy 34.75\%), mentre le configurazioni con LR più conservativi raggiungono tutte accuracy superiori al 92\%. La configurazione
+ottimale ($LR = 3e^{-5}$, $BS = 8$) ha ottenuto la migliore Accuracy e F1-Score.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Learning Rate} & \textbf{Batch Size} & \textbf{Accuracy} & \textbf{F1-Score} \\
+        \hline
+        $3e^{-5}$              & 8                   & \textbf{93.55\%}  & \textbf{89.76\%}  \\
+        $2e^{-5}$              & 8                   & 93.25\%           & 89.43\%           \\
+        $3e^{-5}$              & 16                  & 93.15\%           & 88.88\%           \\
+        $5e^{-5}$              & 8                   & 93.10\%           & 89.05\%           \\
+        $2e^{-5}$              & 16                  & 92.90\%           & 89.10\%           \\
+        $5e^{-5}$              & 16                  & 34.75\%           & 8.60\%            \\
+        \hline
+    \end{tabular}
+    \caption{Grid Search completa sul Full Fine Tuning: tutte le 6 configurazioni ordinate per Accuracy decrescente.}
+\end{table}
+\subsubsection{4. Configurazione Ottimale di LoRA}
+Per individuare l'architettura PEFT ideale, abbiamo eseguito una \textit{Grid Search} testando 24 combinazioni diverse di iperparametri: Rango ($r \in \{8, 16\}$), Moduli Target (\texttt{[q,v]}, \texttt{[q,k,v]}, \texttt{[q,v,k,dense]}), Learning Rate ($2e^{-4}, 2e^{-5}$) e Batch Size ($8, 16$).
+I dati confermano che targettare \textbf{tutti i moduli lineari} (\texttt{[query, value, key, dense]}) è consistentemente superiore rispetto a limitarsi ai soli layer di attenzione. Il Learning Rate si rivela il fattore più critico: $LR = 2e^{-5}$ causa un degrado significativo delle prestazioni in tutte le configurazioni, mentre $LR = 2e^{-4}$ garantisce convergenza stabile. Il rango $r=16$ ottiene un margine di miglioramento modesto rispetto a $r=8$.
 
 \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{|c|l|c|c|l|}
+    \begin{tabular}{|c|l|c|c|c|c|}
         \hline
-        \textbf{Rango} & \textbf{Target Modules}   & \textbf{LR}        & \textbf{Acc}     & \textbf{Esito}                                            \\
+        \textbf{Rango} & \textbf{Target Modules}   & \textbf{LR}        & \textbf{BS} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        8              & \texttt{[q, v]}           & $1e^{-3}$          & 92.35\%          & Buon risultato base.                                      \\
-        \textbf{8}     & \texttt{[q, v, k, dense]} & \textbf{$2e^{-4}$} & \textbf{94.20\%} & \textbf{Migliore (Stabile)}.                              \\
-        16             & \texttt{[q, v, k, dense]} & $1e^{-3}$          & 34.75\%          & \textit{Training Collapse} (LR troppo alto).              \\
-        32             & \texttt{[q, v]}           & $1e^{-4}$          & 91.75\%          & Aumentare $r$ non aiuta quanto targettare \texttt{dense}. \\
+        \textbf{16}    & \texttt{[q, v, k, dense]} & \textbf{$2e^{-4}$} & \textbf{8}  & \textbf{93.35\%}  & \textbf{89.71\%}  \\
+        16             & \texttt{[q, v, k, dense]} & $2e^{-4}$          & 16          & 93.25\%           & 89.00\%           \\
+        8              & \texttt{[q, v, k, dense]} & $2e^{-4}$          & 8           & 93.15\%           & 88.72\%           \\
+        16             & \texttt{[q, k, v]}        & $2e^{-4}$          & 8           & 92.20\%           & 87.52\%           \\
+        16             & \texttt{[q, v]}           & $2e^{-4}$          & 8           & 92.15\%           & 87.32\%           \\
+        8              & \texttt{[q, v]}           & $2e^{-4}$          & 8           & 91.90\%           & 88.06\%           \\
+        16             & \texttt{[q, v, k, dense]} & $2e^{-5}$          & 8           & 90.70\%           & 85.91\%           \\
+        8              & \texttt{[q, v, k, dense]} & $2e^{-5}$          & 8           & 89.25\%           & 83.59\%           \\
+        8              & \texttt{[q, v]}           & $2e^{-5}$          & 8           & 79.25\%           & 66.71\%           \\
         \hline
     \end{tabular}
-    \caption{Selezione della configurazione LoRA ottimale tramite Grid Search}
+    \caption{Selezione rappresentativa dei risultati della Grid Search LoRA, ordinati per Accuracy decrescente.}
 \end{table}
 
 \subsubsection{Sintesi Finale e Confronto}
@@ -248,15 +287,15 @@ In conclusione, la tabella riassuntiva delle migliori configurazioni per categor
     \renewcommand{\arraystretch}{1.3}
     \begin{tabular}{|l|c|c|p{8cm}|}
         \hline
-        \textbf{Strategia}      & \textbf{Accuracy} & \textbf{F1}     & \textbf{Conclusioni}                                             \\
+        \textbf{Strategia}        & \textbf{Accuracy} & \textbf{F1}      & \textbf{Conclusioni}                                                     \\
         \hline
-        In-Context ($k=0$)      & 49.30\%           & 24.6\%          & Inadatto per task emotivi specifici.                             \\
+        In-Context ($k=0$)        & 49.30\%           & 24.63\%          & Inadatto per task emotivi specifici.                                     \\
         \hline
-        Transfer Learning       & 54.45\%           & 29.9\%          & Limitato dalle feature pre-addestrate.                           \\
+        Transfer Learning         & 55.90\%           & 34.70\%          & Limitato dalle feature pre-addestrate.                                   \\
         \hline
-        LoRA Base               & 92.35\%           & 87.5\%          & Ottimo, ma migliorabile.                                         \\
+        LoRA ($r=16$, all-linear) & 93.20\%           & 89.10\%          & Ottimo rapporto parametri/prestazioni.                                   \\
         \hline
-        \textbf{LoRA Optimized} & \textbf{94.20\%}  & \textbf{91.7\%} & \textbf{Best Model}. Estensione ai layer densi + LR controllato. \\
+        \textbf{Full Fine Tuning} & \textbf{93.40\%}  & \textbf{89.90\%} & \textbf{Best Model}. Aggiornamento completo dei pesi con $LR = 3e^{-5}$. \\
         \hline
     \end{tabular}
     \caption{Riepilogo finale Ablation Study}
@@ -264,35 +303,40 @@ In conclusione, la tabella riassuntiva delle migliori configurazioni per categor
 \end{table}
 
 \subsubsection{Results Discussion}
-I risultati ottenuti hanno ampiamente superato le aspettative iniziali per un approccio basato su PEFT.
-Aver raggiunto un'accuratezza del 94.20\% dimostra che i modelli pre-addestrati su domini specifici
-(come BERTweet per i testi provenienti dai social media) costituiscono una base eccellente per il
-fine tuning, richiedendo l'aggiornamento di una frazione minima di parametri per adattarsi a task complessi.
-Inoltre, l'elevato Macro F1-Score (91.69\%) è un indicatore cruciale: conferma che il modello non è collassato
-sulle classi maggioritarie (come \textit{Joy} o \textit{Sadness}), ma ha imparato a discriminare con efficacia
-anche le emozioni meno frequenti nel dataset.
+I risultati ottenuti confermano che il Full Fine Tuning su un modello pre-addestrato su dominio specifico
+costituisce un approccio estremamente efficace per task di classificazione emotiva.
+Raggiungere un'accuratezza del 93.40\% aggiornando l'intero insieme di parametri ha permesso al modello
+di adattarsi profondamente alle caratteristiche del linguaggio informale tipico dei social media.
+L'elevato Macro F1-Score (89.90\%) conferma che il modello non è collassato sulle classi maggioritarie
+(come \textit{Joy} o \textit{Sadness}), ma ha imparato a discriminare con efficacia anche le emozioni
+meno frequenti nel dataset.
 
 Tuttavia, l'analisi qualitativa degli errori, supportata dalla Matrice di Confusione (Figura \ref{fig:confusion_matrix}), ha rivelato che la maggior parte delle misclassificazioni residue non è casuale, ma si concentra su specifiche coppie di emozioni semanticamente vicine o contestualmente ambigue:
 
 \begin{enumerate}
-    \item \textbf{Love vs Joy:} Questa rappresenta la confusione più frequente. È dovuta alla forte sovrapposizione semantica nei testi brevi tipici dei social network, dove parole di affetto, forte apprezzamento ed entusiasmo vengono usate in modo intercambiabile. Frasi che esprimono una profonda gioia spesso contengono termini legati all'amore (es. "I absolutely love this!"), rendendo il confine decisionale estremamente sfumato, a volte anche per un annotatore umano.
+    \item \textbf{Love vs Joy:} Questa rappresenta la confusione più frequente, con il 10\% degli esempi di \textit{Love} classificati erroneamente come \textit{Joy}. È dovuta alla forte sovrapposizione semantica nei testi brevi tipici dei social network, dove parole di affetto, forte apprezzamento ed entusiasmo vengono usate in modo intercambiabile. Frasi che esprimono una profonda gioia spesso contengono termini legati all'amore (es. "I absolutely love this!"), rendendo il confine decisionale estremamente sfumato, a volte anche per un annotatore umano.
 
-    \item \textbf{Surprise vs Fear:} Nei tweet, che sono intrinsecamente brevi e spesso privi di un contesto esteso, la reazione a un evento scioccante può essere facilmente confusa dal modello: non avendo abbastanza indizi testuali, risulta difficile disambiguare se la sorpresa sia di natura neutra/positiva oppure legata a una minaccia (paura).
+    \item \textbf{Fear vs Surprise:} Il 10\% degli esempi di \textit{Surprise} viene classificato erroneamente come \textit{Fear}, e il 4\% degli esempi di \textit{Fear} come \textit{Surprise}. Nei tweet, intrinsecamente brevi e spesso privi di contesto esteso, la reazione a un evento scioccante risulta difficile da disambiguare: senza abbastanza indizi testuali, il modello fatica a distinguere se la sorpresa sia di natura neutra/positiva oppure legata a una minaccia.
 \end{enumerate}
+
+Le classi meglio classificate sono \textit{Sadness} (98\%) e \textit{Joy} (96\%), probabilmente grazie alla loro maggiore frequenza nel dataset e alla ricchezza del loro vocabolario caratteristico. \textit{Surprise} risulta la classe più difficile (88\%), coerentemente con la sua natura semanticamente ibrida.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{img/confusion_matrix.png}
-    \caption{Matrice di Confusione del modello LoRA.}
+    \caption{Matrice di Confusione del modello Full Fine Tuning.}
     \label{fig:confusion_matrix}
 \end{figure}
-
 \subsubsection{Method Validity}
-Il metodo LoRA si è dimostrato estremamente valido e robusto. Al contrario, lo studio di ablation su \textbf{In-Context Learning}
-ha evidenziato un limite strutturale critico: l'architettura BERTweet, progettata con una finestra di contesto ridotta (128 token),
-\textbf{non è idonea} a strategie Few-Shot ($k>3$). Gli esempi dimostrativi tendono a saturare la memoria e troncare il prompt,
-peggiorando le performance invece di migliorarle, rendendo il fine-tuning una scelta obbligata per questo tipo di architetture.
-
+Il metodo di Full Fine Tuning si è dimostrato la strategia più efficace, confermando che l'aggiornamento completo
+dei pesi su un modello pre-addestrato su dominio specifico rappresenta la scelta ottimale quando le risorse
+computazionali lo consentono. LoRA ha ottenuto risultati comparabili (93.20\% di Accuracy) con un numero
+significativamente inferiore di parametri addestrabili, rappresentando un'alternativa valida in contesti
+con vincoli di memoria o tempo. Al contrario, lo studio di ablation su \textbf{In-Context Learning}
+ha evidenziato un limite strutturale critico: l'architettura BERTweet, progettata con una finestra di contesto
+ridotta (128 token), \textbf{non è idonea} a strategie Few-Shot ($k>3$). Gli esempi dimostrativi tendono a
+saturare la memoria e troncare il prompt, peggiorando le performance invece di migliorarle, rendendo il
+fine-tuning una scelta obbligata per questo tipo di architetture.
 \subsection{distilbert-base-uncased}
 
 \subsection{bert-base-uncased}
@@ -318,7 +362,7 @@ L'analisi del modello è stata eseguita utilizzando le seguenti tecnologie:
 Per poter riprodurre i risultati è necessario rieseguire tutte le celle del notebook. A causa dei limiti di utilizzo della T4 GPU di Google Colab, l'esecuzione potrebbe essere interrotta prima del completamento. Per questo motivo è stato collegato Google Drive per il salvataggio dei modelli.
 
 \subsubsection{Results}
-Dopo aver testato differenti tecniche, l'esito migliore è stato raggiunto con la strategia di \textbf{Full Fine-Tuning} che ha ottenuto i seguenti risultati sul Validation Set: 
+Dopo aver testato differenti tecniche, l'esito migliore è stato raggiunto con la strategia di \textbf{Full Fine-Tuning} che ha ottenuto i seguenti risultati sul Validation Set:
 \begin{itemize}
     \item \textbf{Accuracy:} 94.15\%
     \item \textbf{Macro F1-Score:} 91.86\%
@@ -351,12 +395,12 @@ I risultati migliori raggiunti risultano avere un valore di accuracy del $57.95\
         \hline
         \textbf{Learning Rate} & \textbf{Batch Size} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        $1e^{-3}$              & 16                  & \textbf{57.95\%}  & \textbf{32.50\%}            \\
-        $1e^{-3}$              & 32                  & 56.80\%           & 30.66\%            \\
-        $1e^{-4}$              & 16                  & 51.45\%           & 20.68\%            \\
-        $1e^{-4}$              & 32                  & 49.65\%           & 19.88\%            \\
-        $1e^{-5}$              & 16                  & 34.75\%           & 08.60\%            \\
-        $1e^{-5}$              & 32                  & 34.75\%           & 08.60\%            \\
+        $1e^{-3}$              & 16                  & \textbf{57.95\%}  & \textbf{32.50\%}  \\
+        $1e^{-3}$              & 32                  & 56.80\%           & 30.66\%           \\
+        $1e^{-4}$              & 16                  & 51.45\%           & 20.68\%           \\
+        $1e^{-4}$              & 32                  & 49.65\%           & 19.88\%           \\
+        $1e^{-5}$              & 16                  & 34.75\%           & 08.60\%           \\
+        $1e^{-5}$              & 32                  & 34.75\%           & 08.60\%           \\
         \hline
     \end{tabular}
     \caption{Risultati delle configurazioni per l'allineamento della testa di classificazione}
@@ -370,14 +414,14 @@ La configurazione che ha ottenuto i risultati migliori utilizza un valore di Lea
     \centering
     \begin{tabular}{|c|c|c|c|}
         \hline
-        \textbf{Learning Rate} & \textbf{Batch Size} & \textbf{Accuracy} & \textbf{F1-Score}  \\
+        \textbf{Learning Rate} & \textbf{Batch Size} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        $2e^{-5}$              & 16                  & \textbf{93.10\%}  & \textbf{89.26\%}   \\
-        $1e^{-5}$              & 32                  & 92.60\%           & 88.80\%            \\
-        $2e^{-5}$              & 32                  & 92.75\%           & 88.40\%            \\
-        $3e^{-5}$              & 32                  & 92.90\%           & 88.28\%            \\
-        $3e^{-5}$              & 16                  & 92.30\%           & 88.16\%            \\
-        $1e^{-5}$              & 16                  & 92.50\%           & 88.03\%            \\
+        $2e^{-5}$              & 16                  & \textbf{93.10\%}  & \textbf{89.26\%}  \\
+        $1e^{-5}$              & 32                  & 92.60\%           & 88.80\%           \\
+        $2e^{-5}$              & 32                  & 92.75\%           & 88.40\%           \\
+        $3e^{-5}$              & 32                  & 92.90\%           & 88.28\%           \\
+        $3e^{-5}$              & 16                  & 92.30\%           & 88.16\%           \\
+        $1e^{-5}$              & 16                  & 92.50\%           & 88.03\%           \\
         \hline
     \end{tabular}
     \caption{Risultati delle configurazioni di Full Fine-Tuning}
@@ -387,28 +431,28 @@ La configurazione che ha ottenuto i risultati migliori utilizza un valore di Lea
 La caratteristica fondamentale di LoRA è il numero di parametri addestrabili. Grazie a questa strategia anziche allenare il $100\%$ dei perametri, ne sono stati allenati solamente $1,479,942$ per le configurazioni con un rango di $16$ e $2,364,678$ per le configurazioni con rango pari a $32$, un utilizzo pari al $1.8\%$ dei parametri totali del modello.
 Per individuare la configurazione LoRA ottimale, è stata condotta una ricerca su 12 combinazioni di iperparametri tra Rango ($16, 32$), Learning Rate ($5e^{-5}$, $1e^{-4}$, $5e^{-4}$) e Batch Size ($8, 16$).
 La configurazione migliore ($r=32$, LR $5e^{-4}$, BS $16$) raggiunge un'accuracy del 92.65\% e un F1-score macro dell'88.46\%. In generale, $r=32$ ottiene risultati leggermente superiori a $r=16$ a parità di altri iperparametri.
-Il learning rate risulta essere l'iperparametro di maggior impatto. Valori bassi come $5e^{-5}$ producono performance inferiori, mentre valori di LR di $1e^{-4}$ e $5e^{-4}$ garantiscono risultati migliori. 
-Si puo osservare, però, un caso di \textit{training collapse} nella configurazione ($r=32$, LR $5e^{-4}$, BS $8$), che crolla ad un accuracy del 34.75\% e un F1 dell'8.60\%. Osservando la configurazione identica con BS $16$ è possibile notare che non mostra questo problema, suggerendo che batch size ridotte possano amplificare l'instabilità del gradiente se combinati a valori di learning rate elevati e ranghi alti. 
-   
+Il learning rate risulta essere l'iperparametro di maggior impatto. Valori bassi come $5e^{-5}$ producono performance inferiori, mentre valori di LR di $1e^{-4}$ e $5e^{-4}$ garantiscono risultati migliori.
+Si puo osservare, però, un caso di \textit{training collapse} nella configurazione ($r=32$, LR $5e^{-4}$, BS $8$), che crolla ad un accuracy del 34.75\% e un F1 dell'8.60\%. Osservando la configurazione identica con BS $16$ è possibile notare che non mostra questo problema, suggerendo che batch size ridotte possano amplificare l'instabilità del gradiente se combinati a valori di learning rate elevati e ranghi alti.
+
 \begin{table}[H]
     \centering
     \small
     \begin{tabular}{|c|c|c|c|c|l|}
         \hline
-        \textbf{Rank}  & \textbf{LR}  & \textbf{BS}  & \textbf{Accuracy}  & \textbf{F1-Score} \\
+        \textbf{Rank} & \textbf{LR} & \textbf{BS} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        32             & $1e^{-4}$    &  8           & 92.45\%            & 88.61\%          \\
-        32             & $5e^{-4}$    &  16           & \textbf{92.65\%}  & \textbf{88.46\%} \\
-        16             & $5e^{-4}$    &  16           & 92.45\%            & 88.46\%         \\
-        16             & $5e^{-4}$    &  8           & 92.45\%            & 88.36\%          \\
-        32             & $1e^{-4}$    &  16           & 92.50\%            & 88.24\%         \\
-        16             & $1e^{-4}$    &  8           & 92.20\%            & 88.08\%          \\
-        16             & $1e^{-4}$    &  16           & 91.25\%            & 86.87\%         \\
-        32             & $5e^{-5}$    &  8           & 91.00\%            & 86.60\%          \\
-        16             & $5e^{-5}$    &  8           & 90.60\%            & 86.42\%          \\
-        32             & $5e^{-5}$    &  16           & 90.55\%            & 86.41\%         \\
-        16             & $5e^{-5}$    &  16           & 88.85\%            & 84.15\%         \\
-        32             & $5e^{-4}$    &  8           & 34.75\%            & 08.60\%          \\
+        32            & $1e^{-4}$   & 8           & 92.45\%           & 88.61\%           \\
+        32            & $5e^{-4}$   & 16          & \textbf{92.65\%}  & \textbf{88.46\%}  \\
+        16            & $5e^{-4}$   & 16          & 92.45\%           & 88.46\%           \\
+        16            & $5e^{-4}$   & 8           & 92.45\%           & 88.36\%           \\
+        32            & $1e^{-4}$   & 16          & 92.50\%           & 88.24\%           \\
+        16            & $1e^{-4}$   & 8           & 92.20\%           & 88.08\%           \\
+        16            & $1e^{-4}$   & 16          & 91.25\%           & 86.87\%           \\
+        32            & $5e^{-5}$   & 8           & 91.00\%           & 86.60\%           \\
+        16            & $5e^{-5}$   & 8           & 90.60\%           & 86.42\%           \\
+        32            & $5e^{-5}$   & 16          & 90.55\%           & 86.41\%           \\
+        16            & $5e^{-5}$   & 16          & 88.85\%           & 84.15\%           \\
+        32            & $5e^{-4}$   & 8           & 34.75\%           & 08.60\%           \\
         \hline
     \end{tabular}
     \caption{Risultati delle configurazioni LoRA}
@@ -423,12 +467,12 @@ Il modello non è stato ottimizzato per il condizionamento del contesto come fa 
     \centering
     \begin{tabular}{|c|c|c|}
         \hline
-        \textbf{Shots} & \textbf{Accuracy} & \textbf{F1-Score}\\
+        \textbf{Shots} & \textbf{Accuracy} & \textbf{F1-Score} \\
         \hline
-        0                    & \textbf{51.15\%}  & \textbf{26.73\% }\\
-        1                    & 43.53\%           & 21.22\%          \\
-        3                    & 45.77\%           & 22.76\%          \\
-        5                    & 46.35\%           & 23.70\%          \\
+        0              & \textbf{51.15\%}  & \textbf{26.73\% } \\
+        1              & 43.53\%           & 21.22\%           \\
+        3              & 45.77\%           & 22.76\%           \\
+        5              & 46.35\%           & 23.70\%           \\
         \hline
     \end{tabular}
     \caption{Risultati dell'In-Context Learning Zero-Shot e Few-Shots}
@@ -440,26 +484,26 @@ L'analisi degli errori, eseguita con il modello sul quale è stata applicata la 
 
 \begin{enumerate}
     \item \textbf{Love} e \textbf{joy:} La classe \textit{joy} risulta tra le più riconosciute dal modello. La classe \textit{love}, invece, registra la performance peggiore con il 19\% degli esempi classificati erroneamente come \textit{joy}. Questo errore è semanticamente motivato: testi che esprimono amore condividono spesso un tono positivo e lessico affine a quelli di gioia, rendendo il confine tra le due classi ambiguo. Di seguito vengono mostrati alcuni esempi di errore:
-    \begin{itemize}
-        \item \textbf{Testo:} \textit{`i feel the need to work on caring`} $\rightarrow$ \textbf{True:} love, 
-        \textbf{Predicted:} joy
-        \item \textbf{Testo:} \textit{`i was not feeling up to it yet i blamed my fiances deployment for bringing me down`} $\rightarrow$ \textbf{True:} love, 
-        \textbf{Predicted:} joy
-        \item \textbf{Testo:} \textit{`i feel unimportant and small here lately`} $\rightarrow$ \textbf{True:} love, 
-        \textbf{Predicted:} joy
-    \end{itemize}
-    Su un totale di 2000 esempi, la classe \textit{love} viene confusa con \textit{joy} 30 volte.
+          \begin{itemize}
+              \item \textbf{Testo:} \textit{`i feel the need to work on caring`} $\rightarrow$ \textbf{True:} love,
+                    \textbf{Predicted:} joy
+              \item \textbf{Testo:} \textit{`i was not feeling up to it yet i blamed my fiances deployment for bringing me down`} $\rightarrow$ \textbf{True:} love,
+                    \textbf{Predicted:} joy
+              \item \textbf{Testo:} \textit{`i feel unimportant and small here lately`} $\rightarrow$ \textbf{True:} love,
+                    \textbf{Predicted:} joy
+          \end{itemize}
+          Su un totale di 2000 esempi, la classe \textit{love} viene confusa con \textit{joy} 30 volte.
 
     \item \textbf{Surprise} e \textbf{Fear:} Anche in questo caso, la classe \textit{surprise} risulta tra le piu riconosciute, mentre \textit{fear} è la classe che presenta il maggior numero di errori. Il 12\% degli esempi di \textit{fear} viene classificato come \textit{surprise}, e il restante 8\% si distribuisce tra \textit{sadness} (4\%) e \textit{anger} (4\%). La confusione con \textit{surprise} è spiegabile dalla sovrapposizione contestuale delle due emozioni: entrambe implicano una risposta a eventi inattesi, e la distinzione tra timore e stupore può dipendere da sfumature lessicali sottili che il modello fatica a catturare. Di seguito vengono mostrati alcuni esempi di errore:
-    \begin{itemize}
-        \item \textbf{Testo:} \textit{`i feel tortured`} $\rightarrow$ \textbf{True:} fear, 
-        \textbf{Predicted:} surprise
-        \item \textbf{Testo:} \textit{`i know that feeling awkward and not having friends in a space contributes to this`} $\rightarrow$ \textbf{True:} fear, 
-        \textbf{Predicted:} sadness
-        \item \textbf{Testo:} \textit{`im feeling less grumpy after that`} $\rightarrow$ \textbf{True:} fear, 
-        \textbf{Predicted:} sadness
-    \end{itemize}
-    Su un totale di 2000 esempi, la classe \textit{fear} viene confusa con \textit{surprise} 26 volte.
+          \begin{itemize}
+              \item \textbf{Testo:} \textit{`i feel tortured`} $\rightarrow$ \textbf{True:} fear,
+                    \textbf{Predicted:} surprise
+              \item \textbf{Testo:} \textit{`i know that feeling awkward and not having friends in a space contributes to this`} $\rightarrow$ \textbf{True:} fear,
+                    \textbf{Predicted:} sadness
+              \item \textbf{Testo:} \textit{`im feeling less grumpy after that`} $\rightarrow$ \textbf{True:} fear,
+                    \textbf{Predicted:} sadness
+          \end{itemize}
+          Su un totale di 2000 esempi, la classe \textit{fear} viene confusa con \textit{surprise} 26 volte.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -481,18 +525,18 @@ Di seguito vengono riportati gli errori più comuni con la relativa frequenza re
     \centering
     \begin{tabular}{|c|c|c|}
         \hline
-        \textbf{Vera emozione}  & \textbf{Predizione}       & \textbf{Frequenza}    \\
+        \textbf{Vera emozione} & \textbf{Predizione} & \textbf{Frequenza} \\
         \hline
-        love                    & joy                       & 30 volte              \\
-        fear                    & surprise                  & 26 volte              \\
-        joy                     & love                      & 17 volte              \\
-        sadness                 & anger                     & 16 volte              \\
-        fear                    & anger                     & 10 volte              \\
-        fear                    & sadness                   & 10 volte              \\
-        joy                     & surprise                  & 8 volte               \\
-        sadness                 & joy                       & 4 volte               \\
-        joy                     & anger                     & 4 volte               \\
-        anger                   & sadness                   & 3 volte               \\
+        love                   & joy                 & 30 volte           \\
+        fear                   & surprise            & 26 volte           \\
+        joy                    & love                & 17 volte           \\
+        sadness                & anger               & 16 volte           \\
+        fear                   & anger               & 10 volte           \\
+        fear                   & sadness             & 10 volte           \\
+        joy                    & surprise            & 8 volte            \\
+        sadness                & joy                 & 4 volte            \\
+        joy                    & anger               & 4 volte            \\
+        anger                  & sadness             & 3 volte            \\
         \hline
     \end{tabular}
     \caption{Frequenza degli errori più comuni registrati per RoBERTa-base}
@@ -516,15 +560,15 @@ Per conlcudere, di seguito si può trovare una tabella che riassume i migliori r
     \renewcommand{\arraystretch}{1.3}
     \begin{tabular}{|l|c|c|p{8cm}|}
         \hline
-        \textbf{Strategia}      & \textbf{Accuracy} & \textbf{F1}     & \textbf{Conclusioni}                                             \\
+        \textbf{Strategia}        & \textbf{Accuracy} & \textbf{F1}      & \textbf{Conclusioni}                                                                                        \\
         \hline
-        Transfer Learning       & 57.95\%           & 32.50\%          & Performance limitate. Le predizioni si concentrano sulle classi piu frequenti.\\
+        Transfer Learning         & 57.95\%           & 32.50\%          & Performance limitate. Le predizioni si concentrano sulle classi piu frequenti.                              \\
         \hline
-        \textbf{Full Fine-Tuning} & \textbf{93.10\%}  & \textbf{89.26\%} & \textbf{Miglior strategia.} L'aggiornamento di tutti i pesi consente al modello di specializzarsi sul task.\\
+        \textbf{Full Fine-Tuning} & \textbf{93.10\%}  & \textbf{89.26\%} & \textbf{Miglior strategia.} L'aggiornamento di tutti i pesi consente al modello di specializzarsi sul task. \\
         \hline
-        LoRA                    & 92.35\%           & 87.77\%          & Ottimo compromesso tra efficienza e performance. Ottimo per risorse limitate      \\
+        LoRA                      & 92.35\%           & 87.77\%          & Ottimo compromesso tra efficienza e performance. Ottimo per risorse limitate                                \\
         \hline
-        ICL ($0$-Shot)          & 51.15\%           & 26.73\%          & Strategia non adatta a modelli encoder-only.                         \\
+        ICL ($0$-Shot)            & 51.15\%           & 26.73\%          & Strategia non adatta a modelli encoder-only.                                                                \\
         \hline
     \end{tabular}
     \caption{Riepilogo finale Ablation Study}
@@ -532,14 +576,14 @@ Per conlcudere, di seguito si può trovare una tabella che riassume i migliori r
 \end{table}
 
 \subsubsection{Results Discussion}
-Dai risultati ottenuti è facile determinare che, per il task di text emotion classification utilizzando un modello encoder-only come RoBERTa-base, le due strategie più efficienti sono il \textbf{Full Fine-Tuning} e \textbf{LoRA}. Il Full Fine-Tuning risulta la strategia che ha ottenuto risultati migliori, ma con un costo computazionale maggiore dovuto alla richiesta di un elevato numero di risorse per l'aggiornamento del $100\%$ dei parametri. In termini di risorse disponibili, LoRA risulta altamente più efficiente rispetto al Full Fine-Tuning, con un una perdita del $0.75\%$ sul valore di accuracy e del $1.49\%$ sul valore di F1 macro. 
+Dai risultati ottenuti è facile determinare che, per il task di text emotion classification utilizzando un modello encoder-only come RoBERTa-base, le due strategie più efficienti sono il \textbf{Full Fine-Tuning} e \textbf{LoRA}. Il Full Fine-Tuning risulta la strategia che ha ottenuto risultati migliori, ma con un costo computazionale maggiore dovuto alla richiesta di un elevato numero di risorse per l'aggiornamento del $100\%$ dei parametri. In termini di risorse disponibili, LoRA risulta altamente più efficiente rispetto al Full Fine-Tuning, con un una perdita del $0.75\%$ sul valore di accuracy e del $1.49\%$ sul valore di F1 macro.
 I risultati ottenuti sono più che soddisfacenti, in particolare visto lo sbilanciamento delle classi del dataset; con un valore di F1 macro del $89.26\%$ si è dimostrato che il modello risulta in grado di differenziare efficacemente anche le classi meno frequenti come \textbf{suprise} e \textbf{love}.
 
 \subsubsection{Method Validity}
 I risultati ottenuto con la strategia di Full Fine-Tuning di RoBERTa-base confermano la validità dell'approccio adottato per il task di \textit{text emotion classification}. Al tempo stesso una strategia come l'ICL mostra come non sia adatta a un modello encoder-only per questo tipo di task.
 
 \subsubsection{Limitations and Maturity}
-Il lavoro presenta alcune limitazioni che è opportuno considerare nell'interpretazione dei risultati. Il dataset utilizzato è sbilanciato, di conseguenza, classi come \textit{love} e \textit{fear} sono molto frequenti rispetto ad altre, il che si riflette nel 
+Il lavoro presenta alcune limitazioni che è opportuno considerare nell'interpretazione dei risultati. Il dataset utilizzato è sbilanciato, di conseguenza, classi come \textit{love} e \textit{fear} sono molto frequenti rispetto ad altre, il che si riflette nel
 divario tra accuracy e F1-score macro osservato nelle diverse strategie testate.
 Inoltre, l'utilizzo della strategia di ICL, su un modello non adatto, ha fornito risultati che non sono comparabili per un discorso di efficienza rispetto a modelli decoder generativi come GPT, per i quali l'ICL è stato progettato.
 
