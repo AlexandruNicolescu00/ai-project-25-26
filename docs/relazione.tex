@@ -59,17 +59,17 @@ all'annotazione manuale.
 \subsection{Proposed Solution}
 Per affrontare il problema, abbiamo adottato un \textbf{approccio sperimentale comparativo}, testando diverse tecniche di
 fine-tuning su una selezione eterogenea di modelli pre-addestrati. L'obiettivo centrale è stato confrontare l'efficacia delle
-diverse strategie di adattamento in relazione alle architetture sottostanti \textcolor{green}{in riferimento al Dataset scelto:}
+diverse strategie di adattamento in relazione alle architetture sottostanti in riferimento al Dataset scelto:
 
 \begin{itemize}
-    \item \textcolor{green}{\textbf{Emotion di Hugging Face:} pubblicato da dair-ai, è una raccolta di messaggi di Twitter in inglese annotati con sei emozioni di base: sadness (tristezza), joy (gioia), love (amore), anger (rabbia), fear (paura) e surprise (sorpresa), pensato per compiti di text classification multiclassificazione e ricerca nel riconoscimento delle emozioni nel testo.
-I dati sono suddivisi nei classici split train, validation e test. Una caratteristica importante evidenziabile dai grafici, è che la distribuzione delle classi non è bilanciata: alcune emozioni (come sadness e joy) tendono ad essere molto più rappresentate rispetto ad altre (come surprise o love), soprattutto nel training set. Questo sbilanciamento può influenzare l’addestramento dei modelli perché le classi maggioritarie dominano l’apprendimento, mentre quelle minoritarie rischiano di essere trascurate.}
+    \item {\textbf{Emotion di Hugging Face:} pubblicato da dair-ai, è una raccolta di messaggi di Twitter in inglese annotati con sei emozioni di base: sadness (tristezza), joy (gioia), love (amore), anger (rabbia), fear (paura) e surprise (sorpresa), pensato per compiti di text classification multiclassificazione e ricerca nel riconoscimento delle emozioni nel testo.
+          I dati sono suddivisi nei classici split train, validation e test. Una caratteristica importante evidenziabile dai grafici, è che la distribuzione delle classi non è bilanciata: alcune emozioni (come sadness e joy) tendono ad essere molto più rappresentate rispetto ad altre (come surprise o love), soprattutto nel training set. Questo sbilanciamento può influenzare l’addestramento dei modelli perché le classi maggioritarie dominano l’apprendimento, mentre quelle minoritarie rischiano di essere trascurate.}
 
-    \begin{center}
-        \includegraphics[width=0.7\textwidth]{img/immagine1.png}\\[1.5cm]
-        \includegraphics[width=0.7\textwidth]{img/immagine2.png}\\[1.5cm]
-        \includegraphics[width=0.7\textwidth]{img/immagine3.png}
-    \end{center}
+          \begin{center}
+              \includegraphics[width=0.7\textwidth]{img/immagine1.png}\\[1.5cm]
+              \includegraphics[width=0.7\textwidth]{img/immagine2.png}\\[1.5cm]
+              \includegraphics[width=0.7\textwidth]{img/immagine3.png}
+          \end{center}
 \end{itemize}
 
 La nostra soluzione si articola nei seguenti punti:
@@ -86,16 +86,10 @@ La nostra soluzione si articola nei seguenti punti:
 
     \item \textbf{Approccio Metodologico:} Un confronto sistematico tra diverse metodologie di apprendimento:
           \begin{enumerate}
-              \item \textcolor{red}{\textbf{Transfer Learning (Frozen):} Addestramento del solo classificatore mantenendo il corpo del modello congelato.}
-              \item \textcolor{red}{\textbf{Complete Fine-Tuning:} Aggiornamento di tutti i pesi del modello per l'adattamento al task. Si specifica inoltre che, su alcuni modelli, si è scelto di utilizzare anche \textbf{LoRA (Low-Rank Adaptation)}, una tecnica PEFT che inietta matrici addestrabili nei layer del modello.}
-              \item \textcolor{red}{\textbf{In-Context Learning (Zero/Few-Shot):} Per testare le capacità native senza alcun aggiornamento dei pesi.}
-          \end{enumerate}
+              \item \textbf{In-Context Learning:} In seguito all’addestramento del solo classificatore mantenendo il corpo del modello congelato (Alignment classification head), si è utilizzato il metodo di prompt engineering few-shot con diversi gradi.
 
-          \begin{enumerate}
-                \item \textcolor{green}{\textbf{In-Context Learning:} In seguito all’addestramento del solo classificatore mantenendo il corpo del modello congelato (Alignment classification head), si è utilizzato il metodo di prompt engineering few-shot con diversi gradi.}
-    
-                \item \textcolor{green}{\textbf{Complete Fine-Tuning:} Aggiornamento di tutti i pesi del modello per l’adattamento al task.}
-        \end{enumerate}
+              \item \textbf{Complete Fine-Tuning:} Aggiornamento di tutti i pesi del modello per l’adattamento al task.
+          \end{enumerate}
 
     \item \textbf{Sfide Computazionali:} Le principali difficoltà affrontate sono state la gestione della \textbf{Context Window}
           limitata (tipica dei modelli Encoder-Only), che ha imposto vincoli severi sulle strategie di Few-Shot Learning, e la sfida di
@@ -125,9 +119,6 @@ convergere in una fase finale di confronto dei risultati.
     \item \textbf{[Alessandro Modelli]:} Responsabile per \texttt{FacebookAI/roberta-base}.
 \end{itemize}
 
-\paragraph{Summary of Achieved Results:}
-TODO
-
 \subsection{[extra] Literature Review}
 In letteratura, il benchmark per il riconoscimento delle emozioni su testo fa spesso riferimento al
 dataset \texttt{dair-ai/emotion}, introdotto originariamente da Saravia et al. (2018)\cite{saravia-etal-2018-carer} nel
@@ -153,28 +144,53 @@ se ben calibrata, possa eguagliare i metodi tradizionali a una frazione del cost
 \subsection{Solution Choice}
 Abbiamo scartato l'uso di LLM generativi generalisti (es. GPT-4, Llama-3) per motivi di latenza in inferenza e costi computazionali, preferendo architetture \textbf{Encoder-Only} (come \texttt{BERTweet} e le varianti di \texttt{BERT}/\texttt{RoBERTa}). I modelli Encoder sono strutturalmente superiori nei task di classificazione pura grazie all'attenzione bidirezionale che cattura l'intero contesto della frase simultaneamente.
 
-\textcolor{green}{Inizialmente è stato eseguito un addestramento del solo classification head che pur essendo computazionalmente leggero e veloce presenta lo svantaggio di congelare il corpo del modello, limitandone drasticamente la capacità di apprendimento su domini complessi al fine di testare la tecnica di In-Context Learning per testare…, scontrandoci tuttavia con i severi limiti imposti dalla context window ristretta tipica di queste architetture.
-Successivamente, abbiamo testato il Complete Fine-Tuning, il quale aggiorna la totalità dei pesi garantendo un’ottima accuratezza, ma risultando al contempo lento e molto oneroso in termini di memoria.
-}
+Inizialmente è stato eseguito un addestramento del solo classification
+head che pur essendo computazionalmente leggero e veloce presenta lo svantaggio di
+congelare il corpo del modello, limitandone drasticamente la capacità di apprendimento
+su domini complessi al fine di testare la tecnica di In-Context Learning per
+testare le capacità native (\textit{zero-shot} e \textit{few-shot}) dei
+modelli senza effettuare alcun aggiornamento dei pesi, scontrandoci tuttavia con i severi limiti imposti dalla context window
+ristretta tipica di queste architetture.
+Successivamente, abbiamo testato il Complete Fine-Tuning, il quale aggiorna la
+totalità dei pesi garantendo un’ottima accuratezza, ma risultando al contempo lento
+e molto oneroso in termini di memoria.
 
-\textcolor{red}{Per quanto riguarda le tecniche di addestramento e adattamento, abbiamo optato per un confronto a tutto tondo al fine di comprendere appieno i trade-off tra risorse impiegate e prestazioni ottenute. Inizialmente abbiamo valutato il \textbf{Transfer Learning} classico (approccio \textit{Feature Extraction}), che pur essendo computazionalmente leggero e veloce presenta lo svantaggio di congelare il corpo del modello, limitandone drasticamente la capacità di apprendimento su domini complessi. Successivamente, per stabilire un limite superiore (\textit{upper bound}) alle performance, abbiamo testato il \textbf{Complete Fine-Tuning}, il quale aggiorna la totalità dei pesi garantendo un'ottima accuratezza, ma risultando al contempo lento e molto oneroso in termini di memoria. Per avere un quadro sperimentale completo, abbiamo esplorato anche l'\textbf{In-Context Learning} per testare le capacità native (\textit{zero-shot} e \textit{few-shot}) dei modelli senza effettuare alcun aggiornamento dei pesi, scontrandoci tuttavia con i severi limiti imposti dalla \textit{context window} ristretta tipica di queste architetture.
-Infine, proprio per superare l'inefficienza e i costi del fine-tuning completo e la rigidità del transfer learning classico, su alcuni modelli si è scelto di implementare \textbf{LoRA (Low-Rank Adaptation)}. Questa tecnica permette di adattare efficacemente le rappresentazioni interne del modello al task specifico delle emozioni iniettando e modificando solo poche matrici di peso aggiuntive.}
 
 \subsection{Methodology for performance measurement}
 Le prestazioni sono state valutate utilizzando un set di metriche standard per la classificazione multiclasse, selezionate per fornire una visione sia quantitativa che qualitativa:
 
 \begin{itemize}
-    \item \textbf{Accuracy:} Rappresenta la frazione di predizioni corrette rispetto al totale dei campioni. Sebbene sia la metrica più intuitiva per una valutazione globale, in questo progetto viene utilizzata solo come riferimento di base, poiché può risultare ingannevole in presenza di dataset sbilanciati (un modello che predice sempre la classe maggioritaria avrebbe comunque un'accuratezza elevata). 
+    \item \textbf{Accuracy:} Rappresenta la frazione di predizioni corrette rispetto al totale dei campioni. Sebbene sia la metrica più intuitiva per una valutazione globale, in questo progetto viene utilizzata solo come riferimento di base, poiché può risultare ingannevole in presenza di dataset sbilanciati (un modello che predice sempre la classe maggioritaria avrebbe comunque un'accuratezza elevata).
 
-    \textcolor{red}{\item \textbf{Macro F1-Score:} È la media armonica tra \textit{Precision} e \textit{Recall}, calcolata indipendentemente per ogni classe e poi mediata (senza pesare per la numerosità delle istanze). Questa è la metrica \textbf{critica} per il nostro task a causa del forte sbilanciamento del dataset (le classi \textit{Joy} e \textit{Sadness} sono molto più frequenti di \textit{Surprise} e \textit{Love}). L'uso del \textit{Macro-average} penalizza i modelli che ignorano le classi minoritarie, garantendo che ogni emozione abbia lo stesso peso nella valutazione finale.}
-
-    \textcolor{green}{\item \textbf{F1-Score:} È la media armonica tra \textit{Precision} e \textit{Recall}, calcolata indipendentemente per ogni classe e poi mediata (senza pesare per la numerosità delle istanze). Questa è la metrica \textbf{critica} per il nostro task a causa del forte sbilanciamento del dataset (le classi \textit{Joy} e \textit{Sadness} sono molto più frequenti di \textit{Surprise} e \textit{Love}).}
+    \item \textbf{F1-Score:} È la media armonica tra \textit{Precision} e \textit{Recall}, calcolata indipendentemente per ogni classe e poi mediata (senza pesare per la numerosità delle istanze). Questa è la metrica \textbf{critica} per il nostro task a causa del forte sbilanciamento del dataset (le classi \textit{Joy} e \textit{Sadness} sono molto più frequenti di \textit{Surprise} e \textit{Love}).
 
     \item \textbf{Confusion Matrix:} È una tabella che visualizza il confronto tra le etichette reali (righe) e quelle predette dal modello (colonne). Viene utilizzata per l'\textbf{analisi qualitativa} degli errori, permettendo di diagnosticare non solo \textit{quanto} il modello sbaglia, ma \textit{dove} sbaglia (ad esempio, rivelando se l'emozione \textit{Love} viene sistematicamente confusa con \textit{Joy} a causa della sovrapposizione semantica).
 \end{itemize}
 \section{Experimental Results}
 
 \subsection{bertweet-base}
+
+\texttt{vinai/bertweet-base} è un modello di tipo encoder basato sull'architettura RoBERTa,
+pre-addestrato specificamente su un corpus di testi provenienti da Twitter. Presenta le seguenti proprietà:
+
+\begin{itemize}
+    \item \textbf{Parametri:} 135M
+    \item \textbf{Lingua:} English (linguaggio informale, tweet)
+    \item \textbf{Tensor type:} F32
+    \item \textbf{Architettura:} RoBERTa-base domain-specific
+\end{itemize}
+
+Il pre-training è stato condotto su un corpus di 850 milioni di tweet in lingua inglese,
+utilizzando i seguenti task:
+
+\begin{itemize}
+    \item \textbf{Masked Language Modelling (MLM):} viene mascherato casualmente il 15\%
+          dei token nell'input; il modello deve prevedere i token mascherati a partire dal contesto circostante.
+\end{itemize}
+
+La specializzazione sul dominio Twitter rende BERTweet particolarmente adatto a task su testi brevi
+e informali, caratterizzati da abbreviazioni, hashtag, menzioni e un lessico emotivo ricco,
+caratteristiche tipiche del dataset utilizzato in questo lavoro.
 \subsubsection{Demonstration and Technologies}
 Per garantire la riproducibilità degli esperimenti, il progetto è stato sviluppato utilizzando le seguenti tecnologie e versioni:
 \begin{itemize}
@@ -390,7 +406,7 @@ Una fase cruciale in questo tipo di scenari è rappresentata da come viene svolt
 \begin{itemize}
     \item Numero di epoche: quante volte l’intero training set viene processato
     \item Learning rate: la dimensione dei passi di addestramento
-    \item Weight decay: evita che i parametri crescano troppo 
+    \item Weight decay: evita che i parametri crescano troppo
     \item Numero di betch di training per device
 \end{itemize}
 
@@ -399,16 +415,16 @@ Il resto dei parametri, come la politica di gestione del learning rate durante l
 \subsubsection{Parametri per Classification Head Alignment}
 
 \begin{table}[H]
-\centering
-\begin{tabular}{lc}
-\toprule
-Learning Rate & 3e-3 \\
-Weight Decay & 0.01 \\
-Number of Epochs & 15 \\
-Train Batch Size & 16 \\
-\bottomrule
-\end{tabular}
-\caption{Parametri per classification head alignment}
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Learning Rate    & 3e-3 \\
+        Weight Decay     & 0.01 \\
+        Number of Epochs & 15   \\
+        Train Batch Size & 16   \\
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri per classification head alignment}
 \end{table}
 
 Per l'allineamento del classification head di Distilbert è stato utilizzato un learning rate pari a $3 \times 10^{-3}$, valore più elevato rispetto a quello tipicamente impiegato nel fine-tuning completo dei transformer. Questa scelta è coerente con lo scenario di light fine-tuning, in cui il backbone pre-addestrato rimane congelato e viene aggiornato il livello di classificazione, inizializzato casualmente. Un learning rate più alto consente quindi al classificatore di adattarsi rapidamente alle rappresentazioni già strutturate fornite dal modello pre-addestrato, favorendo una convergenza più veloce senza compromettere la stabilità del training.
@@ -420,9 +436,9 @@ Il batch size di 16 rappresenta un compromesso tra stabilità dell’ottimizzazi
 Il numero di epoche è stato fissato a 15: durante le prove è stato osservato che proseguendo oltre, anche per molte epoche aggiuntive, la validation loss rimaneva sostanzialmente stabile, con variazioni minime. Per questo motivo si è scelto di interrompere il training a 15 epoche, in quanto il modello aveva già raggiunto una fase di convergenza e ulteriori iterazioni non portavano miglioramenti significativi.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/Light_FT_loss.png}
-\caption{Training e Validation Loss - Classification Head Alignment}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/Light_FT_loss.png}
+    \caption{Training e Validation Loss - Classification Head Alignment}
 \end{figure}
 
 Il grafico della loss mostra un andamento decrescente sia per il training che per la validation, con una riduzione più marcata nelle prime epoche e un successivo rallentamento del miglioramento. Nella fase iniziale il classification head si adatta rapidamente alle rappresentazioni fornite dal backbone di DistilBERT, determinando un calo evidente della loss. Successivamente la diminuzione diventa più graduale, segno che il modello entra in una fase di raffinamento dei pesi.
@@ -430,9 +446,9 @@ Il grafico della loss mostra un andamento decrescente sia per il training che pe
 Le curve di training e validation rimangono molto vicine lungo tutto il processo, senza divergenze significative. Questo comportamento indica assenza di overfitting marcato e una buona capacità di generalizzazione del classificatore. Nelle ultime epoche la validation loss tende a stabilizzarsi, mostrando variazioni molto contenute: tale plateau ha motivato la scelta di interrompere il training a 15 epoche, poiché ulteriori iterazioni non avrebbero apportato miglioramenti sostanziali.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/Light_FT_gradnorm.png}
-\caption{Gradient Norm - Classification Head Alignment}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/Light_FT_gradnorm.png}
+    \caption{Gradient Norm - Classification Head Alignment}
 \end{figure}
 
 Il grafico della norma del gradiente evidenzia valori generalmente compresi in un intervallo stabile, con oscillazioni moderate tra un’epoca e l’altra. Questo comportamento è coerente con l’utilizzo di un batch size pari a 16, che introduce una componente stocastica negli aggiornamenti, e con il fatto che si stia ottimizzando principalmente il classification head. Le variazioni osservate riflettono la normale dinamica dell’ottimizzazione in un contesto non deterministico.
@@ -443,16 +459,16 @@ Si nota un picco isolato nelle ultime epoche, ma non si osservano fenomeni di es
 \subsubsection{Parametri Fine-tuning Completo}
 
 \begin{table}[H]
-\centering
-\begin{tabular}{lc}
-\toprule
-Learning Rate & 3e-5 \\
-Weight Decay & 0.01 \\
-Max Epochs & 14 \\
-Batch Size & 16 \\
-\bottomrule
-\end{tabular}
-\caption{Parametri per fine-tuning completo}
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Learning Rate & 3e-5 \\
+        Weight Decay  & 0.01 \\
+        Max Epochs    & 14   \\
+        Batch Size    & 16   \\
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri per fine-tuning completo}
 \end{table}
 
 Per il fine-tuning completo del modello DistilBERT, sono stati adottati parametri più conservativi rispetto alla fase di addestramento della sola classification head, in quanto in questa fase vengono aggiornati tutti i pesi del modello pre-addestrato.
@@ -466,9 +482,9 @@ Il numero massimo di 14 epoche è stato inizialmente impostato considerando che,
 Infine, la batch size pari a 16 rappresenta un compromesso tra stabilità dell’aggiornamento del gradiente e limiti di memoria GPU, garantendo un training efficiente e stabile.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/Complete_FT_loss.png}
-\caption{Training e Validation Loss - Fine-tuning Completo}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/Complete_FT_loss.png}
+    \caption{Training e Validation Loss - Fine-tuning Completo}
 \end{figure}
 
 Nel grafico viene riportato l’andamento della training loss e della validation loss nel corso delle epoche.
@@ -477,7 +493,7 @@ Si osserva che:
 
 \begin{enumerate}
     \item La training loss decresce rapidamente fin dalle prime epoche, passando da un valore iniziale elevato (circa 0.9) a valori prossimi allo zero nelle epoche successive.
-    
+
     \item La validation loss, invece, diminuisce solo nelle primissime fasi del training, raggiungendo il valore minimo intorno all’epoca 1.75.
 \end{enumerate}
 
@@ -486,9 +502,9 @@ Dopo l’epoca 1.75, mentre la training loss continua a diminuire, la validation
 L’analisi del grafico conferma quindi la scelta metodologica di applicare \textit{early stopping} all’epoca 1.75, nonostante il limite massimo fosse stato impostato a 14 epoche. Il punto di minimo della validation loss rappresenta infatti la configurazione con il miglior compromesso tra apprendimento del task e mantenimento della capacità di generalizzazione.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/Complete_FT_gradnorm.png}
-\caption{Gradient Norm - Fine-tuning Completo}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/Complete_FT_gradnorm.png}
+    \caption{Gradient Norm - Fine-tuning Completo}
 \end{figure}
 
 L’andamento della Gradient Norm mostra valori inizialmente più elevati e variabili nelle prime epoche, segno che il modello sta effettuando aggiornamenti significativi per adattarsi al nuovo task.
@@ -506,15 +522,15 @@ Di seguito sono riportate le performance dei migliori modelli, light fine-tuned 
 
 \textbf{Performance inContext Learning}
 
-In questa sezione si valuta quanto il modello, allineato al task, riesca a performare utilizzando la tecnica di \textit{in-context learning} applicata al test set. 
+In questa sezione si valuta quanto il modello, allineato al task, riesca a performare utilizzando la tecnica di \textit{in-context learning} applicata al test set.
 
 La valutazione è stata eseguita mediante tre diversi gradi di somministrazione:
 
 \begin{enumerate}
     \item \textbf{One Shot}: i sample sono arricchiti dalla presenza di un esempio di applicazione del task.
-    
+
     \item \textbf{Three Shot}: i sample sono arricchiti dalla presenza di tre esempi di applicazione del task.
-    
+
     \item \textbf{Five Shot}: i sample sono arricchiti dalla presenza di cinque esempi di applicazione del task.
 \end{enumerate}
 
@@ -523,31 +539,31 @@ La valutazione è stata eseguita mediante tre diversi gradi di somministrazione:
 Accuracy: 0.4805
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.4575 & 0.5835 & 0.5129 \\
-1 & 0.5577 & 0.7367 & 0.6348 \\
-2 & 0.0000 & 0.0000 & 0.0000 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.3235 & 0.4911 & 0.3901 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.4575    & 0.5835 & 0.5129 \\
+        1     & 0.5577    & 0.7367 & 0.6348 \\
+        2     & 0.0000    & 0.0000 & 0.0000 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.3235    & 0.4911 & 0.3901 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/one_shot_light_metrics.png}
-\caption{Metriche One Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/one_shot_light_metrics.png}
+    \caption{Metriche One Shot}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_one_shot_light_confusion_matrix.png}
-\caption{Confusion Matrix One Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_one_shot_light_confusion_matrix.png}
+    \caption{Confusion Matrix One Shot}
 \end{figure}
 
 \subparagraph{Three-Shot Performance}
@@ -555,31 +571,31 @@ Class & Precision & Recall & F1 \\
 Accuracy: 0.4540
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.5103 & 0.3838 & 0.4381 \\
-1 & 0.4350 & 0.9525 & 0.5972 \\
-2 & 0.0000 & 0.0000 & 0.0000 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.5610 & 0.1027 & 0.1736 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.5103    & 0.3838 & 0.4381 \\
+        1     & 0.4350    & 0.9525 & 0.5972 \\
+        2     & 0.0000    & 0.0000 & 0.0000 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.5610    & 0.1027 & 0.1736 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/three_shot_light_metrics.png}
-\caption{Metriche Three Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/three_shot_light_metrics.png}
+    \caption{Metriche Three Shot}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_three_shot_light_confusion_matrix.png}
-\caption{Confusion Matrix Three Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_three_shot_light_confusion_matrix.png}
+    \caption{Confusion Matrix Three Shot}
 \end{figure}
 
 \subparagraph{Five-Shot Performance}
@@ -587,41 +603,41 @@ Class & Precision & Recall & F1 \\
 Accuracy: 0.4730
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.4152 & 0.7917 & 0.5447 \\
-1 & 0.6433 & 0.5554 & 0.5961 \\
-2 & 0.0000 & 0.0000 & 0.0000 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.3425 & 0.4464 & 0.3876 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.4152    & 0.7917 & 0.5447 \\
+        1     & 0.6433    & 0.5554 & 0.5961 \\
+        2     & 0.0000    & 0.0000 & 0.0000 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.3425    & 0.4464 & 0.3876 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/five_shot_light_metrics.png}
-\caption{Metriche Five Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/five_shot_light_metrics.png}
+    \caption{Metriche Five Shot}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_five_shot_light_confusion_matrix.png}
-\caption{Confusion Matrix Five Shot}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_five_shot_light_confusion_matrix.png}
+    \caption{Confusion Matrix Five Shot}
 \end{figure}
 
 \paragraph{Confronto Performance In-Context}
 
-In questa sezione si confrontano le performance dei vari gradi di inContext, ma per rendere il confronto più comprensibile, si è scelto di restringere le metriche di valutazione a F1 e Accuracy. 
+In questa sezione si confrontano le performance dei vari gradi di inContext, ma per rendere il confronto più comprensibile, si è scelto di restringere le metriche di valutazione a F1 e Accuracy.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/compare performance f1.png}
-\caption{Confronto F1-score}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/compare performance f1.png}
+    \caption{Confronto F1-score}
 \end{figure}
 
 Il grafico confronta l’F1-score ottenuto nelle diverse configurazioni sperimentali (Five Shot, Three Shot e One Shot) per ciascuna classe. Si osserva che la classe 1 mantiene le prestazioni migliori in tutte le configurazioni, con valori di F1 prossimi a 0.6, confermandosi la categoria più facilmente discriminabile dal modello.
@@ -631,9 +647,9 @@ La classe 0 mostra prestazioni intermedie, con un miglioramento nella configuraz
 Nel complesso, le prestazioni risultano sbilanciate tra le classi: alcune categorie vengono apprese in modo più efficace, mentre altre rimangono più problematiche.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/compare accuracy.png}
-\caption{Confronto Accuracy}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/compare accuracy.png}
+    \caption{Confronto Accuracy}
 \end{figure}
 
 Il grafico evidenzia che l’accuracy globale non cresce in modo monotono all’aumentare degli shot: si osserva una diminuzione nel three-shot rispetto all’one-shot, seguita da un miglioramento nel five-shot. Tuttavia, i valori rimangono contenuti, coerentemente con la forte polarizzazione del modello verso una singola classe. L’accuracy risulta quindi influenzata dallo sbilanciamento delle predizioni, non riflettendo un apprendimento uniforme su tutte le classi.
@@ -645,25 +661,25 @@ In questa sezione si espongono le performance del modello sul test set senza l�
 Accuracy: 0.9260
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.9621 & 0.9604 & 0.9612 \\
-1 & 0.9406 & 0.9568 & 0.9486 \\
-2 & 0.8553 & 0.8176 & 0.8360 \\
-3 & 0.9211 & 0.9211 & 0.9211 \\
-4 & 0.8692 & 0.9196 & 0.8937 \\
-5 & 0.8163 & 0.6061 & 0.6957 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.9621    & 0.9604 & 0.9612 \\
+        1     & 0.9406    & 0.9568 & 0.9486 \\
+        2     & 0.8553    & 0.8176 & 0.8360 \\
+        3     & 0.9211    & 0.9211 & 0.9211 \\
+        4     & 0.8692    & 0.9196 & 0.8937 \\
+        5     & 0.8163    & 0.6061 & 0.6957 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/complete_ft_test_metrics.png}
-\caption{Metriche per classe - Fine-tuning Completo}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/complete_ft_test_metrics.png}
+    \caption{Metriche per classe - Fine-tuning Completo}
 \end{figure}
 
 Il grafico mostra Precision, Recall e F1-score per ciascuna classe emotiva dopo il fine-tuning completo del modello. Le prestazioni risultano complessivamente elevate e bilanciate per la maggior parte delle classi. In particolare, sadness, joy e anger presentano valori prossimi a 0.95–0.97, indicando un’elevata capacità del modello di identificare correttamente tali categorie con un buon equilibrio tra precisione e richiamo.
@@ -674,9 +690,9 @@ Nel complesso, il fine-tuning completo consente al modello di apprendere rappres
 
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/distilbert/Confusion_Matrix_complete_ft_confusion_matrix.png}
-\caption{Confusion Matrix - Fine-tuning Completo}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/distilbert/Confusion_Matrix_complete_ft_confusion_matrix.png}
+    \caption{Confusion Matrix - Fine-tuning Completo}
 \end{figure}
 
 La matrice di confusione evidenzia le prestazioni del modello nella classificazione delle 6 classi. I valori più elevati si trovano lungo la diagonale principale, indicando un buon numero di predizioni corrette per tutte le classi.
@@ -713,7 +729,7 @@ Una fase cruciale in questo tipo di scenari è rappresentata da come viene svolt
 \begin{itemize}
     \item Numero di epoche: quante volte l’intero training set viene processato
     \item Learning rate: la dimensione dei passi di addestramento
-    \item Weight decay: evita che i parametri crescano troppo 
+    \item Weight decay: evita che i parametri crescano troppo
     \item Numero di betch di training per device
     \item Floating point: precisione di rappresentazione dei tensori
 \end{itemize}
@@ -723,35 +739,35 @@ Il resto dei parametri, come la politica di gestione del learning rate durante l
 \subsubsection{Parametri per Classification Head Alignment}
 
 \begin{table}[H]
-\centering
-\begin{tabular}{lc}
-\toprule
-Learning Rate & 4e-3 \\
-Weight Decay & 0.01 \\
-Number of Epochs & 14 \\
-Train Batch Size & 16 \\
-Fp16 & True\\
-\bottomrule
-\end{tabular}
-\caption{Parametri per classification head alignment}
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Learning Rate    & 4e-3 \\
+        Weight Decay     & 0.01 \\
+        Number of Epochs & 14   \\
+        Train Batch Size & 16   \\
+        Fp16             & True \\
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri per classification head alignment}
 \end{table}
 
 La scelta di questi parametri è motivata da diversi fattori. In primo luogo, si possono eseguire passi di addestramento più ampi, queto perché il livello in esame dev’essere addestrato da zero; quindi, non c’è il pericolo di inquinare i risultati di pre-training. Inoltre, per la decadenza dei pesi si è tenuto un valore abbastanza standar, in quanto si è osservato che la rumorosità introdotta da esso, accentuata dalla limitata dimensione dei betch, non riscontri grande impatto sull’apprendimento.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine1.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine1.png}
 \end{figure}
 
-Osservando l’andamento della training loss, possiamo affermare che, si delinea una tendenza discendente, la quale suggerisce un apprendimento sano. Infatti, non si denota alcun asintoto orizzontalo che possano far sospettare la presenza di un minimo locale, che l’addestramento non riesce a superare. 
+Osservando l’andamento della training loss, possiamo affermare che, si delinea una tendenza discendente, la quale suggerisce un apprendimento sano. Infatti, non si denota alcun asintoto orizzontalo che possano far sospettare la presenza di un minimo locale, che l’addestramento non riesce a superare.
 
 L’addestramento prosegue sino alla soglia delle 14 epoche, questo perché, osservando l’andamento della validation loss, si può concludere che il modello migliora siano alla 13.57 epoca, oltre la quale la validation loss riscontra una crescita non trascurabile, il che può essere sintomo di over-fitting. Al termine del training viene prelevato il modello che ottiene un miglior risultato in fase di validation.
 
-Si ricorda, che questa fase comprende solo l’ultimo livello del modello, per cui si ritiene difficile ottenere risultati migliori. 
+Si ricorda, che questa fase comprende solo l’ultimo livello del modello, per cui si ritiene difficile ottenere risultati migliori.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine2.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine2.png}
 \end{figure}
 
 Per concludere l’analisi della fase di allineamento, si riporta anche l’andamento della norma L2 dei gradienti. Osservare questo parametro è essenziale per riconoscere fenomeni come il gradient vanishing e/o exploding. Nel nostro caso, la norma è stabile oscillando tra i valori 2 e 7.5, questo ci fa concludere che l’addestramento è stabile.
@@ -759,33 +775,33 @@ Per concludere l’analisi della fase di allineamento, si riporta anche l’anda
 \subsubsection{Parametri Fine-tuning Completo}
 
 \begin{table}[H]
-\centering
-\begin{tabular}{lc}
-\toprule
-Learning Rate & 2e-5 \\
-Weight Decay & 0.001 \\
-Max Epochs & 6 \\
-Batch Size & 16 \\
-Fp16 & True \\
-\bottomrule
-\end{tabular}
-\caption{Parametri per fine-tuning completo}
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        Learning Rate & 2e-5  \\
+        Weight Decay  & 0.001 \\
+        Max Epochs    & 6     \\
+        Batch Size    & 16    \\
+        Fp16          & True  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri per fine-tuning completo}
 \end{table}
 
-In questa fase di addestramento siamo stati più cauti, spostandoci di meno e con una minore decadenza dei pesi, il che causa meno rumore. 
+In questa fase di addestramento siamo stati più cauti, spostandoci di meno e con una minore decadenza dei pesi, il che causa meno rumore.
 
-Questo riportato di seguito è un addestramento standard, si poteva eseguirne un altro più completo. Una volta scelti i parametri di training, si poteva proseguire utilizzando il devset (training + validation) con una suddivisione casuale tra training set e validation set, ripetere più volte l’addestramento e calcolare media e varianza della training loss nel punto in cui la validation loss raggiungeva il suo minimo. Alla fine si eseguiva un unico training su tutto il devset fermando l’addestramento quando la training loss raggiunge la media delle training loss precedenti. 
+Questo riportato di seguito è un addestramento standard, si poteva eseguirne un altro più completo. Una volta scelti i parametri di training, si poteva proseguire utilizzando il devset (training + validation) con una suddivisione casuale tra training set e validation set, ripetere più volte l’addestramento e calcolare media e varianza della training loss nel punto in cui la validation loss raggiungeva il suo minimo. Alla fine si eseguiva un unico training su tutto il devset fermando l’addestramento quando la training loss raggiunge la media delle training loss precedenti.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine3.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine3.png}
 \end{figure}
 
 Si ripetono qui le stesse osservazioni fatte per la fase di allineamento. Tuttavia, a differenza della precedente fase, qui non si riscontra un’improvvisa risalita della validation loss, ma è più graduale; quindi, abbiamo proseguito l’addestramento per più tempo, così da essere ragionevolmente sicuri che questa non riprendesse più a scendere.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine4.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine4.png}
 \end{figure}
 
 Per quanto riguarda lo studio della norma dei gradienti, in questo caso c’è una maggiore oscillazione, l’intervallo dei valori è maggiore. Tuttavia, si resta su valori sicuri e, inoltre, confrontandola con la training loss, si può riscontrare che gli spike isolati non hanno ripercussioni sull’addestramento.
@@ -800,9 +816,9 @@ Qui si valuta quanto il modello, allineato al task, riesca a performare utilizza
 
 \begin{enumerate}
     \item \textbf{One Shot}: i sample sono arricchiti dalla presenza di un esempio di applicazione del task.
-    
+
     \item \textbf{Three Shot}: i sample sono arricchiti dalla presenza di tre esempi di applicazione del task.
-    
+
     \item \textbf{Five Shot}: i sample sono arricchiti dalla presenza di cinque esempi di applicazione del task.
 \end{enumerate}
 
@@ -811,29 +827,29 @@ Qui si valuta quanto il modello, allineato al task, riesca a performare utilizza
 Accuracy: 0.489
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.4485 & 0.6970 & 0.5458 \\
-1 & 0.5234 & 0.8201 & 0.6390 \\
-2 & 0.4285 & 0.0189 & 0.0361 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.0000 & 0.0000 & 0.0000 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.4485    & 0.6970 & 0.5458 \\
+        1     & 0.5234    & 0.8201 & 0.6390 \\
+        2     & 0.4285    & 0.0189 & 0.0361 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.0000    & 0.0000 & 0.0000 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine5.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine5.png}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine6.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine6.png}
 \end{figure}
 
 \subparagraph{Three-Shot}
@@ -841,29 +857,29 @@ Class & Precision & Recall & F1 \\
 Accuracy: 0.387
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.5140 & 0.1583 & 0.2421 \\
-1 & 0.3752 & 0.9784 & 0.5425 \\
-2 & 0.2222 & 0.0126 & 0.0238 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.0000 & 0.0000 & 0.0000 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.5140    & 0.1583 & 0.2421 \\
+        1     & 0.3752    & 0.9784 & 0.5425 \\
+        2     & 0.2222    & 0.0126 & 0.0238 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.0000    & 0.0000 & 0.0000 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine7.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine7.png}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine8.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine8.png}
 \end{figure}
 
 \subparagraph{Five-Shot}
@@ -871,29 +887,29 @@ Class & Precision & Recall & F1 \\
 Accuracy: 0.418
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.4673 & 0.3941 & 0.4276 \\
-1 & 0.4647 & 0.8158 & 0.5922 \\
-2 & 0.1379 & 0.2516 & 0.1782 \\
-3 & 0.0000 & 0.0000 & 0.0000 \\
-4 & 0.0000 & 0.0000 & 0.0000 \\
-5 & 0.0000 & 0.0000 & 0.0000 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.4673    & 0.3941 & 0.4276 \\
+        1     & 0.4647    & 0.8158 & 0.5922 \\
+        2     & 0.1379    & 0.2516 & 0.1782 \\
+        3     & 0.0000    & 0.0000 & 0.0000 \\
+        4     & 0.0000    & 0.0000 & 0.0000 \\
+        5     & 0.0000    & 0.0000 & 0.0000 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine9.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine9.png}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.6\textwidth]{img/bert/Immagine10.png}
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/bert/Immagine10.png}
 \end{figure}
 
 \paragraph{Confronto Performance In-Context}
@@ -901,8 +917,8 @@ Class & Precision & Recall & F1 \\
 In questa sezione si confrontano le performance dei vari gradi di inContext.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine11.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine11.png}
 \end{figure}
 
 Osservando le metriche a confronto, si può riscontrare l’assenza di nette variazioni nelle prestazioni. Incrementando il numero di esempi in input per il modello, questo non incrementa le sue capacità. Questo conferma la natura di abilità emergente, dei modelli decoder di grandi dimensioni, dell’abilità esercitata.
@@ -914,31 +930,31 @@ In questa sezione si espongono le performance del modello sul test set senza l�
 Accuracy: 0.93
 
 \begin{table}[H]
-\centering
-\begin{tabular}{cccc}
-\toprule
-Class & Precision & Recall & F1 \\
-\midrule
-0 & 0.9641 & 0.9707 & 0.9674 \\
-1 & 0.9602 & 0.9381 & 0.9490 \\
-2 & 0.8095 & 0.8553 & 0.8318 \\
-3 & 0.9200 & 0.9200 & 0.9200 \\
-4 & 0.8707 & 0.9018 & 0.8860 \\
-5 & 0.7377 & 0.6818 & 0.7087 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        Class & Precision & Recall & F1     \\
+        \midrule
+        0     & 0.9641    & 0.9707 & 0.9674 \\
+        1     & 0.9602    & 0.9381 & 0.9490 \\
+        2     & 0.8095    & 0.8553 & 0.8318 \\
+        3     & 0.9200    & 0.9200 & 0.9200 \\
+        4     & 0.8707    & 0.9018 & 0.8860 \\
+        5     & 0.7377    & 0.6818 & 0.7087 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine12.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine12.png}
 \end{figure}
 
 Si osserva un netto incremento delle prestazioni del modello. Tuttavia, si sottolinea che queste sono direttamente proporzionali alle dimensioni delle partizioni dei datasets. Il modello ottiene risultati migliori in presenza delle classi predominanti nei dati (Classe 0 e 1), al contrario, classi più rare (Classe 2 e 5) mettono in difficoltà il modello. In conclusione, le prestazioni del modello riflettono la natura sbilanciata dei datasets.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{img/bert/Immagine13.png}
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/bert/Immagine13.png}
 \end{figure}
 
 
@@ -1192,6 +1208,124 @@ Inoltre, l'utilizzo della strategia di ICL, su un modello non adatto, ha fornito
 Il seguente lavoro potrebbe essere esteso con diversi sviluppi futuri.
 Un primo contributo significativo sarebbe l'estensione dell'analisi a modelli decoder generativi, come LLaMA o GPT, per una valutazione comparativa dell'efficienza dell'ICL in un contesto architetturale più adeguato. Questo consentirebbe di valutare concretamente il divario di performance rispetto all'approccio encoder-only utilizzato.
 Sarebbe, inoltre, interessante estendere l'analisi a modelli multilingua, come XLM-RoBERTa, per valutare lo stesso approccio su testi in lingue diverse dall'inglese e ampliare il campo di applicazione del sistema sviluppato.
+
+\section{Confronto Finale tra i Modelli}
+
+In questa sezione vengono messi a confronto i risultati ottenuti dai quattro modelli analizzati:
+\texttt{vinai/bertweet-base}, \texttt{distilbert-base-uncased}, \texttt{bert-base-uncased} e \texttt{FacebookAI/roberta-base}.
+Il confronto è strutturato per strategia di training, al fine di isolare l'impatto dell'architettura del modello
+a parità di approccio.
+
+\subsection{Confronto per Strategia}
+
+\subsubsection{Transfer Learning (Frozen)}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Modello}       & \textbf{Accuracy} & \textbf{F1 Macro} \\
+        \hline
+        \texttt{roberta-base}  & \textbf{57.95\%}  & \textbf{32.50\%}  \\
+        \texttt{bertweet-base} & 54.15\%           & 29.62\%           \\
+        \hline
+    \end{tabular}
+    \caption{Confronto Transfer Learning (Frozen) tra i modelli}
+\end{table}
+
+In questa configurazione tutti i modelli mostrano prestazioni limitate, con accuracy massima attorno al 58\%.
+RoBERTa ottiene l'accuracy più alta, ma nessun modello supera il 60\%, confermando che il semplice allineamento
+della testa di classificazione è insufficiente per un task emotivo articolato come questo.
+
+\subsubsection{Full Fine Tuning}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|l|}
+        \hline
+        \textbf{Modello}                 & \textbf{Accuracy} & \textbf{F1 Macro} & \textbf{Note}                    \\
+        \hline
+        \texttt{bertweet-base}           & \textbf{93.40\%}  & \textbf{89.90\%}  & Domain-specific su Twitter.      \\
+        \texttt{roberta-base}            & 93.10\%           & 89.26\%           & Stabile su tutto il range di LR. \\
+        \texttt{bert-base-uncased}       & 93.00\%           & 87.72\%           & Early stopping all'epoca 2.00.   \\
+        \texttt{distilbert-base-uncased} & 92.60\%           & 87.61\%           & Early stopping all'epoca 1.75.   \\
+        \hline
+    \end{tabular}
+    \caption{Confronto Full Fine Tuning tra i modelli}
+\end{table}
+
+Il Full Fine Tuning produce risultati molto simili tra tutti i modelli, con accuracy compresa tra 92.60\% e 93.40\%.
+BERTweet ottiene il margine migliore, probabilmente grazie al pre-training su dati Twitter, semanticamente
+più vicini al dataset di riferimento. È degno di nota che DistilBERT, pur avendo la metà dei parametri di BERT,
+raggiunge prestazioni competitive, dimostrando una buona efficienza parametrica.
+
+\subsubsection{LoRA}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|l|}
+        \hline
+        \textbf{Modello}       & \textbf{Accuracy} & \textbf{F1 Macro} & \textbf{Configurazione Ottimale}             \\
+        \hline
+        \texttt{bertweet-base} & \textbf{93.20\%}  & \textbf{89.10\%}  & $r=16$, \texttt{[q,v,k,dense]}, $LR=2e^{-4}$ \\
+        \texttt{roberta-base}  & 92.65\%           & 88.46\%           & $r=32$, $LR=5e^{-4}$, $BS=16$                \\
+        \hline
+    \end{tabular}
+    \caption{Confronto LoRA tra i modelli (solo modelli per cui è stata applicata)}
+\end{table}
+
+\subsubsection{In-Context Learning (K-Shot)}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Modello}                 & K & \textbf{Accuracy} & \textbf{F1 Macro} \\
+        \hline
+        \texttt{roberta-base}            & 0 & \textbf{51.15\%}  & \textbf{26.73\%}  \\
+        \texttt{bertweet-base}           & 0 & 49.30\%           & 24.63\%           \\
+        \texttt{bert-base-uncased}       & 1 & 48.90\%           & 20.35\%           \\
+        \texttt{distilbert-base-uncased} & 1 & 48.05\%           & 25.63\%           \\
+        \hline
+    \end{tabular}
+    \caption{Confronto In-Context Learning (K-Shot) tra i modelli}
+\end{table}
+
+In tutti i modelli l'ICL produce risultati contenuti, coerentemente con la natura encoder-only delle architetture
+analizzate: questi modelli non sono stati progettati per il condizionamento del contesto tipico dell'ICL,
+che risulta invece un punto di forza dei modelli decoder generativi.
+
+\subsection{Sintesi Finale}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Modello}                 & \textbf{Parametri} & \textbf{Best Accuracy} & \textbf{Best F1 Macro} \\
+        \hline
+        \texttt{bertweet-base}           & 134M               & \textbf{93.40\%}       & \textbf{89.90\%}       \\
+        \texttt{roberta-base}            & 124M               & 93.10\%                & 89.26\%                \\
+        \texttt{bert-base-uncased}       & 110M               & 93.00\%                & 87.72\%                \\
+        \texttt{distilbert-base-uncased} & 66M                & 92.60\%                & 87.61\%                \\
+        \hline
+    \end{tabular}
+    \caption{Riepilogo dei migliori risultati ottenuti per ciascun modello (Full Fine Tuning)}
+    \label{tab:model_comparison}
+\end{table}
+
+I risultati evidenziano che, a parità di strategia di training ottimale (Full Fine Tuning), le differenze
+prestazionali tra i modelli sono contenute (meno dell'1\% di accuracy), suggerendo che la strategia di
+addestramento ha un impatto maggiore rispetto alla scelta dell'architettura in questo task.
+BERTweet si conferma la scelta migliore grazie alla specializzazione sul dominio Twitter, ma la sua superiorità
+è marginale rispetto a modelli general-purpose come RoBERTa e BERT.
+DistilBERT rappresenta la scelta più efficiente in termini di rapporto prestazioni/parametri,
+raggiungendo il 92.60\% con soli 66M di parametri, circa la metà degli altri modelli analizzati.
+
 \subsection{Limitations and Maturity}
 \begin{itemize}
     \item \textbf{Limiti:} La \textit{Context Window} limitata impedisce l'uso di prompt complessi o catene di ragionamento.
