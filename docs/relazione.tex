@@ -404,13 +404,13 @@ A differenza di BERT, DistilBERT non utilizza il task Next Sentence Prediction (
 Una fase cruciale in questo tipo di scenari è rappresentata da come viene svolto l’addestramento del modello. Questo è in larga parte delineato dalla selezione dei parametri di addestramento. Nel nostro caso ci siamo soffermati sui seguenti:
 
 \begin{itemize}
-    \item Numero di epoche: quante volte l’intero training set viene processato
+    \item Number of Epochs: quante volte l’intero training set viene processato
     \item Learning rate: la dimensione dei passi di addestramento
     \item Weight decay: evita che i parametri crescano troppo
-    \item Numero di betch di training per device
+    \item Train Batch Size: dimensione di batch di training per device
 \end{itemize}
 
-Il resto dei parametri, come la politica di gestione del learning rate durante l’addestramento, sono stati lasciati di default.
+Gli altri valori configurativi sono stati mantenuti alle impostazioni predefinite.
 
 \subsubsection{Parametri per Classification Head Alignment}
 
@@ -518,119 +518,174 @@ Pertanto, l’andamento della gradient norm risulta coerente con la scelta di ap
 
 \subsubsection{Risultati}
 
-Di seguito sono riportate le performance dei migliori modelli, light fine-tuned e complete fine-tuned.
+Di seguito vengono presentate le prestazioni ottenute dai modelli con i risultati migliori, sia nella versione light fine-tuned sia in quella fully fine-tuned.
 
-\textbf{Performance inContext Learning}
+\subsubsection*{Performance inContext Learning}
 
-In questa sezione si valuta quanto il modello, allineato al task, riesca a performare utilizzando la tecnica di \textit{in-context learning} applicata al test set.
+In questa sezione viene analizzata la capacità del modello, opportunamente allineato al task, di ottenere buone prestazioni mediante l’utilizzo della tecnica di in-context learning applicata al test set.
 
-La valutazione è stata eseguita mediante tre diversi gradi di somministrazione:
+La valutazione è stata condotta considerando tre differenti livelli di fornitura di esempi:
 
 \begin{enumerate}
-    \item \textbf{One Shot}: i sample sono arricchiti dalla presenza di un esempio di applicazione del task.
+    \item \textbf{One Shot}: ciascun campione è accompagnato da un singolo esempio che mostra l’applicazione del task.
 
-    \item \textbf{Three Shot}: i sample sono arricchiti dalla presenza di tre esempi di applicazione del task.
+    \item \textbf{Three Shot}: ciascun campione è corredato da tre esempi illustrativi dell’applicazione del task.
 
-    \item \textbf{Five Shot}: i sample sono arricchiti dalla presenza di cinque esempi di applicazione del task.
+    \item \textbf{Five Shot}: ciascun campione include cinque esempi che dimostrano l’esecuzione del task.
 \end{enumerate}
 
-\subparagraph{One-Shot Performance}
+Per ciascuna configurazione di in-context learning considerata vengono riportati i principali risultati ottenuti dal modello. In particolare, per ogni configurazione vengono presentati l’accuracy complessiva e le metriche di precision, recall e F1-score calcolate per ciascuna classe. Queste ultime sono mostrate sia in forma tabellare sia tramite rappresentazione grafica al fine di facilitarne l’interpretazione e il confronto tra le diverse classi.
 
-Accuracy: 0.4805
+Inoltre, per ogni configurazione viene riportata la relativa confusion matrix, che consente di analizzare più nel dettaglio la distribuzione delle predizioni del modello. In tale matrice, le righe rappresentano le classi reali, mentre le colonne indicano le classi predette dal modello. I valori presenti sulla diagonale principale corrispondono alle classificazioni corrette, mentre i valori al di fuori della diagonale evidenziano gli errori di classificazione e permettono di individuare eventuali confusioni tra specifiche classi.
+
+\subsubsection*{One-Shot Performance}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.4805 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione One-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
     \begin{tabular}{cccc}
         \toprule
-        Class & Precision & Recall & F1     \\
+        Class & Precision & Recall & F1 \\
         \midrule
-        0     & 0.4575    & 0.5835 & 0.5129 \\
-        1     & 0.5577    & 0.7367 & 0.6348 \\
-        2     & 0.0000    & 0.0000 & 0.0000 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.3235    & 0.4911 & 0.3901 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness & 0.4575 & 0.5835 & 0.5129 \\
+        Joy & 0.5577 & 0.7367 & 0.6348 \\
+        Love & 0.0000 & 0.0000 & 0.0000 \\
+        Anger & 0.0000 & 0.0000 & 0.0000 \\
+        Fear & 0.3235 & 0.4911 & 0.3901 \\
+        Surprise & 0.0000 & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione One-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/one_shot_light_metrics.png}
-    \caption{Metriche One Shot}
+    \caption{Rappresentazione grafica delle metriche in configurazione One-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_one_shot_light_confusion_matrix.png}
-    \caption{Confusion Matrix One Shot}
+    \caption{Confusion matrix del modello in configurazione One-Shot}
 \end{figure}
 
-\subparagraph{Three-Shot Performance}
+\subsubsection*{Three-Shot Performance}
 
-Accuracy: 0.4540
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.4540 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione Three-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
     \begin{tabular}{cccc}
         \toprule
-        Class & Precision & Recall & F1     \\
+        Class & Precision & Recall & F1 \\
         \midrule
-        0     & 0.5103    & 0.3838 & 0.4381 \\
-        1     & 0.4350    & 0.9525 & 0.5972 \\
-        2     & 0.0000    & 0.0000 & 0.0000 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.5610    & 0.1027 & 0.1736 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness & 0.5103 & 0.3838 & 0.4381 \\
+        Joy & 0.4350 & 0.9525 & 0.5972 \\
+        Love & 0.0000 & 0.0000 & 0.0000 \\
+        Anger & 0.0000 & 0.0000 & 0.0000 \\
+        Fear & 0.5610 & 0.1027 & 0.1736 \\
+        Surprise & 0.0000 & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione Three-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/three_shot_light_metrics.png}
-    \caption{Metriche Three Shot}
+    \caption{Rappresentazione grafica delle metriche in configurazione Three-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_three_shot_light_confusion_matrix.png}
-    \caption{Confusion Matrix Three Shot}
+    \caption{Confusion matrix del modello in configurazione Three-Shot}
 \end{figure}
 
-\subparagraph{Five-Shot Performance}
+\subsubsection*{Five-Shot Performance}
 
-Accuracy: 0.4730
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.4730 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione Five-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
     \begin{tabular}{cccc}
         \toprule
-        Class & Precision & Recall & F1     \\
+        Class & Precision & Recall & F1 \\
         \midrule
-        0     & 0.4152    & 0.7917 & 0.5447 \\
-        1     & 0.6433    & 0.5554 & 0.5961 \\
-        2     & 0.0000    & 0.0000 & 0.0000 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.3425    & 0.4464 & 0.3876 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness & 0.4152 & 0.7917 & 0.5447 \\
+        Joy & 0.6433 & 0.5554 & 0.5961 \\
+        Love & 0.0000 & 0.0000 & 0.0000 \\
+        Anger & 0.0000 & 0.0000 & 0.0000 \\
+        Fear & 0.3425 & 0.4464 & 0.3876 \\
+        Surprise & 0.0000 & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione Five-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/five_shot_light_metrics.png}
-    \caption{Metriche Five Shot}
+    \caption{Rappresentazione grafica delle metriche in configurazione Five-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/distilbert/Confusion_Matrix_five_shot_light_confusion_matrix.png}
-    \caption{Confusion Matrix Five Shot}
+    \caption{Confusion matrix del modello in configurazione Five-Shot}
 \end{figure}
 
-\paragraph{Confronto Performance In-Context}
+\subsubsection*{Confronto Performance In-Context}
 
 In questa sezione si confrontano le performance dei vari gradi di inContext, ma per rendere il confronto più comprensibile, si è scelto di restringere le metriche di valutazione a F1 e Accuracy.
 
@@ -640,9 +695,9 @@ In questa sezione si confrontano le performance dei vari gradi di inContext, ma 
     \caption{Confronto F1-score}
 \end{figure}
 
-Il grafico confronta l’F1-score ottenuto nelle diverse configurazioni sperimentali (Five Shot, Three Shot e One Shot) per ciascuna classe. Si osserva che la classe 1 mantiene le prestazioni migliori in tutte le configurazioni, con valori di F1 prossimi a 0.6, confermandosi la categoria più facilmente discriminabile dal modello.
+Il grafico confronta l’F1-score ottenuto nelle diverse configurazioni sperimentali (Five Shot, Three Shot e One Shot) per ciascuna classe. Si osserva che la classe Joy mantiene le prestazioni migliori in tutte le configurazioni, con valori di F1 prossimi a 0.6, confermandosi la categoria più facilmente discriminabile dal modello.
 
-La classe 0 mostra prestazioni intermedie, con un miglioramento nella configurazione Five Shot rispetto alle altre. La classe 4, invece, presenta valori sensibilmente più bassi, evidenziando una maggiore difficoltà del modello nel riconoscere correttamente tale categoria.
+La classe Sadness mostra prestazioni intermedie, con un miglioramento nella configurazione Five Shot rispetto alle altre. La classe Fear, invece, presenta valori sensibilmente più bassi, evidenziando una maggiore difficoltà del modello nel riconoscere correttamente tale categoria.
 
 Nel complesso, le prestazioni risultano sbilanciate tra le classi: alcune categorie vengono apprese in modo più efficace, mentre altre rimangono più problematiche.
 
@@ -654,11 +709,23 @@ Nel complesso, le prestazioni risultano sbilanciate tra le classi: alcune catego
 
 Il grafico evidenzia che l’accuracy globale non cresce in modo monotono all’aumentare degli shot: si osserva una diminuzione nel three-shot rispetto all’one-shot, seguita da un miglioramento nel five-shot. Tuttavia, i valori rimangono contenuti, coerentemente con la forte polarizzazione del modello verso una singola classe. L’accuracy risulta quindi influenzata dallo sbilanciamento delle predizioni, non riflettendo un apprendimento uniforme su tutte le classi.
 
-\subsubsection{Performance Fine-tuning Completo}
+\subsubsection*{Performance Fine-tuning Completo}
 
-In questa sezione si espongono le performance del modello sul test set senza l’applicazione della tecnica di inContext.
+In questa sezione vengono presentate le prestazioni del modello sul test set a seguito del processo di fine-tuning completo.
 
-Accuracy: 0.9260
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.9260 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello dopo Fine-tuning Completo}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
@@ -666,20 +733,23 @@ Accuracy: 0.9260
         \toprule
         Class & Precision & Recall & F1     \\
         \midrule
-        0     & 0.9621    & 0.9604 & 0.9612 \\
-        1     & 0.9406    & 0.9568 & 0.9486 \\
-        2     & 0.8553    & 0.8176 & 0.8360 \\
-        3     & 0.9211    & 0.9211 & 0.9211 \\
-        4     & 0.8692    & 0.9196 & 0.8937 \\
-        5     & 0.8163    & 0.6061 & 0.6957 \\
+        Sadness     & 0.9621    & 0.9604 & 0.9612 \\
+        Joy     & 0.9406    & 0.9568 & 0.9486 \\
+        Love     & 0.8553    & 0.8176 & 0.8360 \\
+        Anger     & 0.9211    & 0.9211 & 0.9211 \\
+        Fear     & 0.8692    & 0.9196 & 0.8937 \\
+        Surprise     & 0.8163    & 0.6061 & 0.6957 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe dopo Fine-tuning Completo}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{img/distilbert/complete_ft_test_metrics.png}
-    \caption{Metriche per classe - Fine-tuning Completo}
+    \caption{Rappresentazione grafica delle metriche dopo Fine-tuning Completo}
 \end{figure}
 
 Il grafico mostra Precision, Recall e F1-score per ciascuna classe emotiva dopo il fine-tuning completo del modello. Le prestazioni risultano complessivamente elevate e bilanciate per la maggior parte delle classi. In particolare, sadness, joy e anger presentano valori prossimi a 0.95–0.97, indicando un’elevata capacità del modello di identificare correttamente tali categorie con un buon equilibrio tra precisione e richiamo.
@@ -688,18 +758,19 @@ Anche fear e love mostrano risultati solidi, sebbene con una lieve variabilità 
 
 Nel complesso, il fine-tuning completo consente al modello di apprendere rappresentazioni discriminative efficaci, garantendo performance elevate e relativamente omogenee tra le diverse classi, con limitate criticità concentrate principalmente sulla classe surprise.
 
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{img/distilbert/Confusion_Matrix_complete_ft_confusion_matrix.png}
-    \caption{Confusion Matrix - Fine-tuning Completo}
+    \caption{Confusion matrix del modello dopo Fine-tuning Completo}
 \end{figure}
 
 La matrice di confusione evidenzia le prestazioni del modello nella classificazione delle 6 classi. I valori più elevati si trovano lungo la diagonale principale, indicando un buon numero di predizioni corrette per tutte le classi.
 
-In particolare, la classe 2 mostra la performance migliore con 665 classificazioni corrette, seguita dalla classe 1 con 558 predizioni corrette. Anche le classi 3, 4 e 5 presentano buoni risultati, rispettivamente con 130, 253 e 206 casi corretti, e un livello di errore complessivamente contenuto.
+In particolare, la classe Joy mostra la performance migliore con 665 classificazioni corrette, seguita dalla classe Sadness con 558 predizioni corrette. Anche le classi Love, Anger e Fear presentano buoni risultati, rispettivamente con 130, 253 e 206 casi corretti, e un livello di errore complessivamente contenuto.
 
-La classe 6 risulta la più critica: pur avendo 40 classificazioni corrette, mostra una confusione significativa soprattutto con la classe 5 (17 casi), oltre a qualche errore verso le classi 1 e 2. Questo suggerisce una possibile somiglianza tra le classi 5 e 6 o una maggiore difficoltà del modello nel distinguere correttamente questa categoria.
+La classe Surprise risulta la più critica: pur avendo 40 classificazioni corrette, mostra una confusione significativa soprattutto con la classe Fear (17 casi), oltre a qualche errore verso le classi Sadness e Joy. Questo suggerisce una possibile somiglianza tra le classi Fear e Surprise o una maggiore difficoltà del modello nel distinguere correttamente questa categoria.
 
 Nel complesso, il modello dimostra buone prestazioni generali, con errori limitati e concentrati principalmente tra specifiche coppie di classi.
 
@@ -730,7 +801,7 @@ Una fase cruciale in questo tipo di scenari è rappresentata da come viene svolt
     \item Numero di epoche: quante volte l’intero training set viene processato
     \item Learning rate: la dimensione dei passi di addestramento
     \item Weight decay: evita che i parametri crescano troppo
-    \item Numero di betch di training per device
+    \item Dimensione dei batch di training per device
     \item Floating point: precisione di rappresentazione dei tensori
 \end{itemize}
 
@@ -788,9 +859,11 @@ Per concludere l’analisi della fase di allineamento, si riporta anche l’anda
     \caption{Parametri per fine-tuning completo}
 \end{table}
 
-In questa fase di addestramento siamo stati più cauti, spostandoci di meno e con una minore decadenza dei pesi, il che causa meno rumore.
+Durante questa fase di addestramento è stato adottato un approccio più prudente, caratterizzato da aggiornamenti dei parametri meno marcati e da una minore decadenza dei pesi, al fine di ridurre il rumore nel processo di ottimizzazione.
 
-Questo riportato di seguito è un addestramento standard, si poteva eseguirne un altro più completo. Una volta scelti i parametri di training, si poteva proseguire utilizzando il devset (training + validation) con una suddivisione casuale tra training set e validation set, ripetere più volte l’addestramento e calcolare media e varianza della training loss nel punto in cui la validation loss raggiungeva il suo minimo. Alla fine si eseguiva un unico training su tutto il devset fermando l’addestramento quando la training loss raggiunge la media delle training loss precedenti.
+L’addestramento riportato di seguito rappresenta una procedura standard; sarebbe stato tuttavia possibile effettuare un processo più approfondito. Una volta definiti i parametri di training, si sarebbe potuto procedere utilizzando l’intero devset (training + validation), effettuando una suddivisione casuale tra training set e validation set. Successivamente, l’addestramento avrebbe potuto essere ripetuto più volte, calcolando media e varianza della training loss nel punto in cui la validation loss raggiunge il proprio valore minimo.
+
+Infine, si sarebbe potuto eseguire un unico addestramento sull’intero devset, interrompendo il processo nel momento in cui la training loss avesse raggiunto il valore medio delle training loss osservate nei precedenti esperimenti.
 
 \begin{figure}[H]
     \centering
@@ -810,7 +883,7 @@ Per quanto riguarda lo studio della norma dei gradienti, in questo caso c’è u
 
 Di seguito sono riportate le performance dei migliori modelli, light fine-tuned e complete fine-tuned.
 
-\textbf{Performance inContext Learning}
+\subsubsection*{Performance inContext Learning}
 
 Qui si valuta quanto il modello, allineato al task, riesca a performare utilizzando la tecnica di inContext learning applicata al test set. La valutazione è stata eseguita mediante 3 gradi di somministrazione:
 
@@ -822,9 +895,61 @@ Qui si valuta quanto il modello, allineato al task, riesca a performare utilizza
     \item \textbf{Five Shot}: i sample sono arricchiti dalla presenza di cinque esempi di applicazione del task.
 \end{enumerate}
 
-\subparagraph{One-Shot performance}
+Tuttavia, prima di presentare i risultati, è opportuno chiarire alcune definizioni relative alle principali metriche di valutazione utilizzate.
 
-Accuracy: 0.489
+\begin{itemize}
+
+\item \textbf{TP (True Positives)}: rappresentano i veri positivi, ovvero le predizioni corrette per una determinata classe.
+
+\item \textbf{FP (False Positives)}: indicano i falsi positivi, ossia i casi in cui il modello predice la classe in esame quando in realtà l’osservazione appartiene a un’altra classe.
+
+\item \textbf{FN (False Negatives)}: rappresentano i falsi negativi, ovvero i casi in cui il modello predice una classe diversa da quella effettiva, che invece corrisponde alla classe in esame.
+
+\end{itemize}
+
+A partire da tali quantità vengono definite alcune metriche di performance.
+
+\begin{itemize}
+
+\item \textbf{Precision}
+\[
+Precision = \frac{TP}{TP + FP}
+\]
+
+Questa metrica misura la proporzione di predizioni corrette tra tutte quelle assegnate alla classe considerata. È importante sottolineare che la precisione può assumere valore pari a 1 anche in presenza di una bassa accuratezza complessiva; ciò accade, ad esempio, quando il modello effettua una sola predizione per una determinata classe e questa risulta corretta.
+
+\item \textbf{Recall}
+\[
+Recall = \frac{TP}{TP + FN}
+\]
+
+Questa metrica indica la capacità del modello di individuare correttamente tutte le istanze appartenenti alla classe considerata. Anche il recall può raggiungere valore pari a 1 pur in presenza di una bassa accuratezza globale, ad esempio nel caso in cui il modello tenda a predire sempre la stessa classe, sovrastimandone la presenza.
+
+\end{itemize}
+
+Per tali ragioni risulta opportuno considerare una metrica composita, quale l'\textbf{F1-score}, che consente di bilanciare precision e recall:
+
+\[
+F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}
+\]
+
+A supporto di quanto esposto, vengono di seguito riportate le \textbf{confusion matrix}, che permettono di rappresentare graficamente la distribuzione delle predizioni corrette ed errate del modello, fornendo una visione più immediata delle sue prestazioni.
+
+\subsubsection*{One-Shot performance}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.4890 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione One-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
@@ -832,29 +957,48 @@ Accuracy: 0.489
         \toprule
         Class & Precision & Recall & F1     \\
         \midrule
-        0     & 0.4485    & 0.6970 & 0.5458 \\
-        1     & 0.5234    & 0.8201 & 0.6390 \\
-        2     & 0.4285    & 0.0189 & 0.0361 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.0000    & 0.0000 & 0.0000 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness     & 0.4485    & 0.6970 & 0.5458 \\
+        Joy     & 0.5234    & 0.8201 & 0.6390 \\
+        Love     & 0.4285    & 0.0189 & 0.0361 \\
+        Anger     & 0.0000    & 0.0000 & 0.0000 \\
+        Fear     & 0.0000    & 0.0000 & 0.0000 \\
+        Surprise     & 0.0000    & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione One-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine5.png}
+    \caption{Rappresentazione grafica delle metriche in configurazione One-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine6.png}
+    \caption{Confusion matrix del modello in configurazione One-Shot}
 \end{figure}
 
-\subparagraph{Three-Shot}
+\subsubsection*{Three-Shot}
 
-Accuracy: 0.387
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.3870 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione Three-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
@@ -862,29 +1006,48 @@ Accuracy: 0.387
         \toprule
         Class & Precision & Recall & F1     \\
         \midrule
-        0     & 0.5140    & 0.1583 & 0.2421 \\
-        1     & 0.3752    & 0.9784 & 0.5425 \\
-        2     & 0.2222    & 0.0126 & 0.0238 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.0000    & 0.0000 & 0.0000 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness     & 0.5140    & 0.1583 & 0.2421 \\
+        Joy     & 0.3752    & 0.9784 & 0.5425 \\
+        Love     & 0.2222    & 0.0126 & 0.0238 \\
+        Anger     & 0.0000    & 0.0000 & 0.0000 \\
+        Fear     & 0.0000    & 0.0000 & 0.0000 \\
+        Surprise     & 0.0000    & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione Three-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine7.png}
+    \caption{Rappresentazione grafica delle metriche in configurazione Three-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine8.png}
+    \caption{Confusion matrix del modello in configurazione Three-Shot}
 \end{figure}
 
-\subparagraph{Five-Shot}
+\subsubsection*{Five-Shot}
 
-Accuracy: 0.418
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.4180 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello in configurazione Five-Shot}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
@@ -892,27 +1055,34 @@ Accuracy: 0.418
         \toprule
         Class & Precision & Recall & F1     \\
         \midrule
-        0     & 0.4673    & 0.3941 & 0.4276 \\
-        1     & 0.4647    & 0.8158 & 0.5922 \\
-        2     & 0.1379    & 0.2516 & 0.1782 \\
-        3     & 0.0000    & 0.0000 & 0.0000 \\
-        4     & 0.0000    & 0.0000 & 0.0000 \\
-        5     & 0.0000    & 0.0000 & 0.0000 \\
+        Sadness     & 0.4673    & 0.3941 & 0.4276 \\
+        Joy     & 0.4647    & 0.8158 & 0.5922 \\
+        Love     & 0.1379    & 0.2516 & 0.1782 \\
+        Anger     & 0.0000    & 0.0000 & 0.0000 \\
+        Fear     & 0.0000    & 0.0000 & 0.0000 \\
+        Surprise     & 0.0000    & 0.0000 & 0.0000 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe in configurazione Five-Shot}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine9.png}
+    \caption{Rappresentazione grafica delle metriche in configurazione Five-Shot}
 \end{figure}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{img/bert/Immagine10.png}
+    \caption{Confusion matrix del modello in configurazione Five-Shot}
 \end{figure}
 
-\paragraph{Confronto Performance In-Context}
+\subsubsection*{Confronto Performance In-Context}
 
 In questa sezione si confrontano le performance dei vari gradi di inContext.
 
@@ -923,11 +1093,23 @@ In questa sezione si confrontano le performance dei vari gradi di inContext.
 
 Osservando le metriche a confronto, si può riscontrare l’assenza di nette variazioni nelle prestazioni. Incrementando il numero di esempi in input per il modello, questo non incrementa le sue capacità. Questo conferma la natura di abilità emergente, dei modelli decoder di grandi dimensioni, dell’abilità esercitata.
 
-\subsubsection{Performance Fine-tuning Completo}
+\subsubsection*{Performance Fine-tuning Completo}
 
 In questa sezione si espongono le performance del modello sul test set senza l’applicazione della tecnica di inContext.
 
-Accuracy: 0.93
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Accuracy & 0.9300 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Accuracy del modello dopo Fine-tuning Completo}
+\end{table}
+
+\vspace{0.5cm}
 
 \begin{table}[H]
     \centering
@@ -935,26 +1117,33 @@ Accuracy: 0.93
         \toprule
         Class & Precision & Recall & F1     \\
         \midrule
-        0     & 0.9641    & 0.9707 & 0.9674 \\
-        1     & 0.9602    & 0.9381 & 0.9490 \\
-        2     & 0.8095    & 0.8553 & 0.8318 \\
-        3     & 0.9200    & 0.9200 & 0.9200 \\
-        4     & 0.8707    & 0.9018 & 0.8860 \\
-        5     & 0.7377    & 0.6818 & 0.7087 \\
+        Sadness     & 0.9641    & 0.9707 & 0.9674 \\
+        Joy     & 0.9602    & 0.9381 & 0.9490 \\
+        Love     & 0.8095    & 0.8553 & 0.8318 \\
+        Anger     & 0.9200    & 0.9200 & 0.9200 \\
+        Fear     & 0.8707    & 0.9018 & 0.8860 \\
+        Surprise     & 0.7377    & 0.6818 & 0.7087 \\
         \bottomrule
     \end{tabular}
+    \caption{Metriche di precision, recall e F1 per classe dopo Fine-tuning Completo}
 \end{table}
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{img/bert/Immagine12.png}
+    \caption{Rappresentazione grafica delle metriche dopo Fine-tuning Completo}
 \end{figure}
 
-Si osserva un netto incremento delle prestazioni del modello. Tuttavia, si sottolinea che queste sono direttamente proporzionali alle dimensioni delle partizioni dei datasets. Il modello ottiene risultati migliori in presenza delle classi predominanti nei dati (Classe 0 e 1), al contrario, classi più rare (Classe 2 e 5) mettono in difficoltà il modello. In conclusione, le prestazioni del modello riflettono la natura sbilanciata dei datasets.
+Si osserva un netto incremento delle prestazioni del modello. Tuttavia, si sottolinea che queste sono direttamente proporzionali alle dimensioni delle partizioni dei datasets. Il modello ottiene risultati migliori in presenza delle classi predominanti nei dati (Classe Sadness e Joy), al contrario, classi più rare (Classe Love e Surprise) mettono in difficoltà il modello. In conclusione, le prestazioni del modello riflettono la natura sbilanciata dei datasets.
+
+\vspace{0.5cm}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{img/bert/Immagine13.png}
+    \caption{Confusion matrix del modello dopo Fine-tuning Completo}
 \end{figure}
 
 
