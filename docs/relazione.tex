@@ -1284,7 +1284,7 @@ Il modello non è stato ottimizzato per il condizionamento del contesto come fa 
     \caption{Risultati dell'In-Context Learning Zero-Shot e Few-Shots}
 \end{table}
 
-\subsection{Analisi degli errori}
+\subsubsection{Analisi degli errori}
 L'analisi degli errori, eseguita con il modello sul quale è stata applicata la strategia di Full Fine-Tuning con risultati migliori, mostra che il maggior numero di errori di classificazione si concentra su determinate classi di emozioni:
 
 
@@ -1407,25 +1407,41 @@ a parità di approccio.
 
 \subsection{Confronto per Strategia}
 
-\subsubsection{Transfer Learning (Frozen)}
+\subsubsection{In-Context Learning}
 
 \begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.3}
-    \begin{tabular}{|l|c|c|}
+    \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Modello}       & \textbf{Accuracy} & \textbf{F1 Macro} \\
+        \textbf{Modello}                 & \textbf{Shots} & \textbf{Accuracy} & \textbf{F1 Macro} \\
         \hline
-        \texttt{roberta-base}  & \textbf{57.95\%}  & \textbf{32.50\%}  \\
-        \texttt{bertweet-base} & 54.15\%           & 29.62\%           \\
+        \texttt{bert-base-uncased}       & 1 & \textbf{48.90\%}  & \textbf{20.35\%}  \\
+        \texttt{distilbert-base-uncased} & 1 & 48.05\%           & 25.63\%           \\
+        \texttt{bertweet-base}           & 1 & 46.87\%           & 22.28\%           \\
+        \texttt{roberta-base}            & 1 & 43.53\%           & 21.22\%           \\
         \hline
     \end{tabular}
-    \caption{Confronto Transfer Learning (Frozen) tra i modelli}
+    \caption{Confronto In-Context Learning (1-Shot) tra i modelli}
 \end{table}
 
-In questa configurazione tutti i modelli mostrano prestazioni limitate, con accuracy massima attorno al 58\%.
-RoBERTa ottiene l'accuracy più alta, ma nessun modello supera il 60\%, confermando che il semplice allineamento
-della testa di classificazione è insufficiente per un task emotivo articolato come questo.
+In tutti i modelli l'ICL produce risultati contenuti, coerentemente con la natura encoder-only delle architetture analizzate: questi modelli non sono stati progettati per il condizionamento del contesto tipico dell'ICL, che risulta invece un punto di forza dei modelli decoder generativi. 
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Modello}                 & \textbf{Shots} & \textbf{Accuracy} & \textbf{F1 Macro} \\
+        \hline
+        \texttt{roberta-base}            & 0 & \textbf{51.15\%}  & \textbf{26.73\%}  \\
+        \texttt{bertweet-base}           & 0 & 49.30\%           & 24.63\%           \\
+        \hline
+    \end{tabular}
+    \caption{Confronto In-Context Learning (0-Shot) tra i modelli}
+\end{table}
+
+Si può notare come la configurazione zero-shot, testata sui modelli RoBERTa-base e BERTweet, ottenga risultati migliori rispetto alla configurazione 1-shot, suggerendo che l'aggiunta di esempi nel contesto possa interferire con il pattern del prompt atteso dal Masked Language Modeling (MLM) e degradare le performance.
 
 \subsubsection{Full Fine Tuning}
 
@@ -1450,7 +1466,27 @@ BERTweet ottiene il margine migliore, probabilmente grazie al pre-training su da
 più vicini al dataset di riferimento. È degno di nota che DistilBERT, pur avendo la metà dei parametri di BERT,
 raggiunge prestazioni competitive, dimostrando una buona efficienza parametrica.
 
-\subsubsection{LoRA}
+\subsubsection{[Extra] Transfer Learning (Frozen)}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Modello}       & \textbf{Accuracy} & \textbf{F1 Macro} \\
+        \hline
+        \texttt{roberta-base}  & \textbf{57.95\%}  & \textbf{32.50\%}  \\
+        \texttt{bertweet-base} & 54.15\%           & 29.62\%           \\
+        \hline
+    \end{tabular}
+    \caption{Confronto Transfer Learning (Frozen) tra i modelli}
+\end{table}
+
+In questa configurazione tutti i modelli mostrano prestazioni limitate, con accuracy massima attorno al 58\%.
+RoBERTa ottiene l'accuracy più alta, ma nessun modello supera il 60\%, confermando che il semplice allineamento
+della testa di classificazione è insufficiente per un task emotivo articolato come questo.
+
+\subsubsection{[Extra] LoRA }
 
 \begin{table}[H]
     \centering
@@ -1465,28 +1501,6 @@ raggiunge prestazioni competitive, dimostrando una buona efficienza parametrica.
     \end{tabular}
     \caption{Confronto LoRA tra i modelli (solo modelli per cui è stata applicata)}
 \end{table}
-
-\subsubsection{In-Context Learning (K-Shot)}
-
-\begin{table}[H]
-    \centering
-    \renewcommand{\arraystretch}{1.3}
-    \begin{tabular}{|l|c|c|c|}
-        \hline
-        \textbf{Modello}                 & K & \textbf{Accuracy} & \textbf{F1 Macro} \\
-        \hline
-        \texttt{roberta-base}            & 0 & \textbf{51.15\%}  & \textbf{26.73\%}  \\
-        \texttt{bertweet-base}           & 0 & 49.30\%           & 24.63\%           \\
-        \texttt{bert-base-uncased}       & 1 & 48.90\%           & 20.35\%           \\
-        \texttt{distilbert-base-uncased} & 1 & 48.05\%           & 25.63\%           \\
-        \hline
-    \end{tabular}
-    \caption{Confronto In-Context Learning (K-Shot) tra i modelli}
-\end{table}
-
-In tutti i modelli l'ICL produce risultati contenuti, coerentemente con la natura encoder-only delle architetture
-analizzate: questi modelli non sono stati progettati per il condizionamento del contesto tipico dell'ICL,
-che risulta invece un punto di forza dei modelli decoder generativi.
 
 \subsection{Sintesi Finale}
 
